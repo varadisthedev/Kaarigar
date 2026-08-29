@@ -1,0 +1,11 @@
+# Core service — pricing endpoint + health check. Deploy with just this file
+# if you don't need /asr; the service degrades that one endpoint to 503
+# rather than failing to boot.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+scikit-learn==1.6.0
+joblib==1.4.2
+pandas==2.2.3
+numpy==2.2.1
+python-multipart==0.0.20
