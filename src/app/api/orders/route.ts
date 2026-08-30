@@ -9,6 +9,7 @@ import { isNativeClient } from "@/infra/http/auth-cookies"
 const bodySchema = z.object({
   inquiryId: z.string().uuid(),
   totalAmount: z.number().positive(),
+  advancePercent: z.number().min(10).max(50).optional(),
 })
 
 export async function POST(req: NextRequest) {

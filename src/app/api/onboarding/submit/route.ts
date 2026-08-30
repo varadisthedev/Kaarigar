@@ -6,6 +6,8 @@ import { getCurrentUser } from "@/infra/http/current-user"
 import { requireCsrf } from "@/infra/http/csrf"
 import { isNativeClient } from "@/infra/http/auth-cookies"
 
+const mediaSchema = z.object({ url: z.string().url(), publicId: z.string(), enhancedUrl: z.string().url().optional() })
+
 const bodySchema = z.object({
   draftId: z.string().min(1),
   displayName: z.string().min(2).max(160),
@@ -17,9 +19,22 @@ const bodySchema = z.object({
   pincode: z.string().max(10).optional(),
   yearsExperience: z.number().int().min(0).max(90).optional(),
   monthlyCapacity: z.string().max(80).optional(),
-  photos: z
-    .array(z.object({ url: z.string().url(), publicId: z.string(), enhancedUrl: z.string().url().optional() }))
-    .min(1, "At least one photo is required"),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  photos: z.array(mediaSchema).min(1, "At least one photo is required"),
+  video: z.object({ url: z.string().url(), publicId: z.string() }).optional(),
+  product: z
+    .object({
+      titleEn: z.string().min(2).max(160),
+      titleHi: z.string().max(160).optional(),
+      descriptionEn: z.string().max(4000).optional(),
+      descriptionHi: z.string().max(4000).optional(),
+      materials: z.array(z.string()).optional(),
+      priceMin: z.number().min(0).optional(),
+      priceMax: z.number().min(0).optional(),
+      photos: z.array(mediaSchema).min(1, "At least one product photo is required"),
+    })
+    .optional(),
 })
 
 export async function POST(req: NextRequest) {

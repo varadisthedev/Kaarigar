@@ -190,7 +190,7 @@ export function NewProductFlow({
           <CardTitle>{tOnboarding("photosTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <PhotoUpload kind="product_photo" onChange={setPhotos} />
+          <PhotoUpload kind="product_photo" acceptVideo onChange={setPhotos} />
         </CardContent>
         <CardFooter>
           <Button className="w-full" onClick={submit} disabled={pending || photos.length === 0}>

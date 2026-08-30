@@ -15,7 +15,7 @@ export function MobileTabBar({ isAuthenticated }: { isAuthenticated: boolean }) 
   const items = [
     { href: "/", label: t("home"), icon: Home },
     { href: "/marketplace", label: t("marketplace"), icon: Store },
-    { href: "/inquiries", label: t("inquiries"), icon: MessageSquare },
+    { href: "/inquiries", label: t("chats"), icon: MessageSquare },
     { href: isAuthenticated ? "/account" : "/login", label: isAuthenticated ? t("account") : t("login"), icon: User },
   ] as const
 

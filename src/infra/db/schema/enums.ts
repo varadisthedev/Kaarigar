@@ -67,3 +67,5 @@ export const reviewActionEnum = pgEnum("review_action", [
 ])
 
 export const kycProviderEnum = pgEnum("kyc_provider", ["digilocker", "offline_xml"])
+
+export const mediaTypeEnum = pgEnum("media_type", ["photo", "video"])

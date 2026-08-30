@@ -49,11 +49,25 @@ const schema = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
 
+  // --- ElevenLabs (onboarding voice narration) ---
+  ELEVENLABS_API_KEY: z.string().optional(),
+  ELEVENLABS_VOICE_ID: z.string().default("21m00Tcm4TlvDq8ikWAM"),
+
   // --- Razorpay (advance payments) ---
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
   NEXT_PUBLIC_RAZORPAY_KEY_ID: z.string().optional(),
+
+  // --- Pusher Channels (real-time chat delivery) — messages are always
+  // persisted to Postgres; Pusher is purely the live-notify side-channel.
+  // Without these, chat falls back to the existing polling transport.
+  PUSHER_APP_ID: z.string().optional(),
+  PUSHER_KEY: z.string().optional(),
+  PUSHER_SECRET: z.string().optional(),
+  PUSHER_CLUSTER: z.string().optional(),
+  NEXT_PUBLIC_PUSHER_KEY: z.string().optional(),
+  NEXT_PUBLIC_PUSHER_CLUSTER: z.string().optional(),
 
   // --- OAuth login (Google / GitHub) — additive to phone/OTP, not a
   // replacement. Redirect URIs to register with each provider:
@@ -132,7 +146,9 @@ export const features = {
   cloudinary: Boolean(
     env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET
   ),
+  elevenlabs: Boolean(env.ELEVENLABS_API_KEY),
   razorpay: Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET),
+  pusher: Boolean(env.PUSHER_APP_ID && env.PUSHER_KEY && env.PUSHER_SECRET && env.PUSHER_CLUSTER),
   oauthGoogle: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
   oauthGithub: Boolean(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET),
 } as const

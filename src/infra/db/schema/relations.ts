@@ -3,7 +3,8 @@ import { relations } from "drizzle-orm"
 import { users } from "./users"
 import { sessions } from "./auth"
 import { businesses, businessMedia } from "./business"
-import { products, productMedia } from "./catalog"
+import { products, productMedia, productLikes } from "./catalog"
+import { productViewsDaily } from "./analytics"
 import { voiceSessions } from "./voice"
 import { priceSuggestions } from "./pricing"
 import { inquiries, messages, orders, payments } from "./marketplace"
@@ -24,6 +25,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   kycDocuments: many(kycDocuments),
   auditLogEntries: many(auditLog),
   oauthAccounts: many(oauthAccounts),
+  productLikes: many(productLikes),
 }))
 
 export const oauthAccountsRelations = relations(oauthAccounts, ({ one }) => ({
@@ -54,10 +56,22 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   media: many(productMedia),
   inquiries: many(inquiries),
   priceSuggestions: many(priceSuggestions),
+  likes: many(productLikes),
+  viewsDaily: many(productViewsDaily),
+}))
+
+export const productViewsDailyRelations = relations(productViewsDaily, ({ one }) => ({
+  product: one(products, { fields: [productViewsDaily.productId], references: [products.id] }),
+  business: one(businesses, { fields: [productViewsDaily.businessId], references: [businesses.id] }),
 }))
 
 export const productMediaRelations = relations(productMedia, ({ one }) => ({
   product: one(products, { fields: [productMedia.productId], references: [products.id] }),
+}))
+
+export const productLikesRelations = relations(productLikes, ({ one }) => ({
+  product: one(products, { fields: [productLikes.productId], references: [products.id] }),
+  user: one(users, { fields: [productLikes.userId], references: [users.id] }),
 }))
 
 export const voiceSessionsRelations = relations(voiceSessions, ({ one }) => ({

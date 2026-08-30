@@ -1,0 +1,1 @@
+ALTER TABLE "product_media" ADD COLUMN "media_type" "media_type" DEFAULT 'photo' NOT NULL;

@@ -4,13 +4,15 @@ import {
   varchar,
   text,
   integer,
+  numeric,
+  doublePrecision,
   boolean,
   timestamp,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core"
 
-import { businessStatusEnum } from "./enums"
+import { businessStatusEnum, mediaTypeEnum } from "./enums"
 import { users } from "./users"
 
 /**
@@ -35,12 +37,16 @@ export const businesses = pgTable(
     district: varchar("district", { length: 80 }),
     state: varchar("state", { length: 80 }),
     pincode: varchar("pincode", { length: 10 }),
+    latitude: doublePrecision("latitude"),
+    longitude: doublePrecision("longitude"),
     logoUrl: varchar("logo_url", { length: 2048 }),
     logoPublicId: varchar("logo_public_id", { length: 255 }),
     coverUrl: varchar("cover_url", { length: 2048 }),
     coverPublicId: varchar("cover_public_id", { length: 255 }),
     yearsExperience: integer("years_experience"),
     monthlyCapacity: varchar("monthly_capacity", { length: 80 }),
+    /** Seller-editable monthly earnings goal shown on the Analytics tab's income chart. */
+    monthlyIncomeTarget: numeric("monthly_income_target", { precision: 10, scale: 2 }),
     status: businessStatusEnum("status").notNull().default("draft"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
@@ -66,6 +72,7 @@ export const businessMedia = pgTable(
     cloudinaryPublicId: varchar("cloudinary_public_id", { length: 255 }).notNull(),
     url: varchar("url", { length: 2048 }).notNull(),
     enhancedUrl: varchar("enhanced_url", { length: 2048 }),
+    mediaType: mediaTypeEnum("media_type").notNull().default("photo"),
     isPrimary: boolean("is_primary").notNull().default(false),
     altEn: text("alt_en"),
     altHi: text("alt_hi"),

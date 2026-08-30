@@ -9,18 +9,24 @@ import { formatInr } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/ui/slider"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+
+const DEFAULT_ADVANCE_PERCENT = 20
+const MIN_ADVANCE_PERCENT = 10
+const MAX_ADVANCE_PERCENT = 50
 
 export function PayAdvanceDialog({ inquiryId }: { inquiryId: string }) {
   const t = useTranslations("inquiry")
   const [open, setOpen] = React.useState(false)
   const [totalAmount, setTotalAmount] = React.useState("")
+  const [advancePercent, setAdvancePercent] = React.useState(DEFAULT_ADVANCE_PERCENT)
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [paid, setPaid] = React.useState(false)
 
-  const advancePreview = totalAmount ? Number(totalAmount) * 0.1 : 0
+  const advancePreview = totalAmount ? (Number(totalAmount) * advancePercent) / 100 : 0
 
   async function payNow() {
     setError(null)
@@ -32,7 +38,7 @@ export function PayAdvanceDialog({ inquiryId }: { inquiryId: string }) {
       const orderRes = await apiFetch("/api/orders", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ inquiryId, totalAmount: amount }),
+        body: JSON.stringify({ inquiryId, totalAmount: amount, advancePercent }),
       })
       const orderData = await orderRes.json()
       if (!orderRes.ok) {
@@ -79,9 +85,7 @@ export function PayAdvanceDialog({ inquiryId }: { inquiryId: string }) {
       </DialogTrigger>
       <DialogContent>
         <DialogTitle>{t("advancePayment")}</DialogTitle>
-        <DialogDescription>
-          Enter the total amount you&rsquo;ve agreed on — you&rsquo;ll pay a 10% advance now.
-        </DialogDescription>
+        <DialogDescription>{t("advanceDescription")}</DialogDescription>
 
         <div className="mt-4 flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
@@ -94,10 +98,25 @@ export function PayAdvanceDialog({ inquiryId }: { inquiryId: string }) {
               disabled={pending || paid}
             />
           </div>
+
           {totalAmount && (
-            <p className="text-sm text-muted-foreground">
-              {t("advanceAmount", { percent: 10 })}: <span className="font-medium text-foreground">{formatInr(advancePreview)}</span>
-            </p>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="advance-percent">{t("advanceAmount", { percent: advancePercent })}</Label>
+              <Slider
+                id="advance-percent"
+                value={advancePercent}
+                onValueChange={(v) => setAdvancePercent(Array.isArray(v) ? v[0] : v)}
+                min={MIN_ADVANCE_PERCENT}
+                max={MAX_ADVANCE_PERCENT}
+                step={1}
+                disabled={pending || paid}
+              />
+              <p className="text-xs text-muted-foreground">{t("advanceSliderHint")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("advanceAmount", { percent: advancePercent })}:{" "}
+                <span className="font-medium text-foreground">{formatInr(advancePreview)}</span>
+              </p>
+            </div>
           )}
           {error && (
             <Alert variant="destructive">

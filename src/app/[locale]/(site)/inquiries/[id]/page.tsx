@@ -40,7 +40,7 @@ export default async function InquiryDetailPage({
           : inquiry.status
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-8">
+    <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8">
       <Link href={`/business/${inquiry.business.businessCode ?? ""}`} className="text-sm text-muted-foreground hover:text-foreground">
         {inquiry.business.displayName}
       </Link>

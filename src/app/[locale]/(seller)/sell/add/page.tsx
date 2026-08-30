@@ -18,7 +18,7 @@ export default async function AddPage({
   setRequestLocale(locale)
 
   const user = await getCurrentUser()
-  if (!user) redirect(`/${locale}/login`)
+  if (!user) redirect(`/${locale}/login?next=/${locale}/sell/add`)
 
   const businesses = await findBusinessesByOwner(user.sub)
   const approved = businesses.filter((b) => b.status === "approved")

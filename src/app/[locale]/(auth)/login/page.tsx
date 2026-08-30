@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation"
 import { useRouter } from "@/i18n/navigation"
 import { defaultCountry } from "@/config/countries"
 import { normalizePhoneInput, isValidE164 } from "@/core/auth/phone"
-import { sanitizeRedirectPath } from "@/core/auth/redirect-safety"
+import { sanitizeRedirectPath, stripLocalePrefix } from "@/core/auth/redirect-safety"
 import { apiFetch } from "@/lib/api-fetch"
 import { useCountdown } from "@/hooks/use-countdown"
 
@@ -97,7 +97,7 @@ export default function LoginPage() {
         else setError(t("errorInvalidOtp"))
         return
       }
-      router.push(next)
+      router.push(stripLocalePrefix(next, locale))
       router.refresh()
     } finally {
       setPending(false)

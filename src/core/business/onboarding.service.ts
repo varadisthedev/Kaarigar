@@ -3,6 +3,7 @@ import "server-only"
 import { getSpeechProviderChain } from "@/infra/speech"
 import { createVoiceSession, attachVoiceSessionsToBusiness } from "@/infra/db/repositories/voice.repository"
 import { createBusiness, addBusinessMedia } from "@/infra/db/repositories/business.repository"
+import { createProductListing } from "./catalog.service"
 import { extractBusinessDraft, extractProductDraft } from "./extraction.service"
 import { generateBusinessCode } from "./business-code"
 import type { BusinessDraft, ProductDraft } from "./draft"
@@ -94,12 +95,28 @@ export type SubmitBusinessInput = {
   pincode?: string
   yearsExperience?: number
   monthlyCapacity?: string
+  latitude?: number
+  longitude?: number
   photos: { url: string; publicId: string; enhancedUrl?: string }[]
+  video?: { url: string; publicId: string }
+  product?: {
+    titleEn: string
+    titleHi?: string
+    descriptionEn?: string
+    descriptionHi?: string
+    materials?: string[]
+    priceMin?: number
+    priceMax?: number
+    photos: { url: string; publicId: string; enhancedUrl?: string }[]
+  }
 }
 
 /** The artisan has reviewed the draft, uploaded photos, and just verified
  * their phone — this is the actual submission, landing in `pending_review`
- * for the admin queue. */
+ * for the admin queue. When a first product was also captured during
+ * onboarding, it's created right alongside as a `draft`-status product —
+ * `approveBusiness` already bulk-publishes any draft products on approval,
+ * so it rides along on the same human-review gate for free. */
 export async function submitBusiness(input: SubmitBusinessInput) {
   const business = await createBusiness({
     ownerId: input.ownerId,
@@ -112,23 +129,52 @@ export async function submitBusiness(input: SubmitBusinessInput) {
     pincode: input.pincode,
     yearsExperience: input.yearsExperience,
     monthlyCapacity: input.monthlyCapacity,
+    latitude: input.latitude,
+    longitude: input.longitude,
     status: "pending_review",
     submittedAt: new Date(),
     logoUrl: input.photos[0]?.url,
     logoPublicId: input.photos[0]?.publicId,
   })
 
-  await Promise.all(
-    input.photos.map((photo, i) =>
+  await Promise.all([
+    ...input.photos.map((photo, i) =>
       addBusinessMedia({
         businessId: business.id,
         cloudinaryPublicId: photo.publicId,
         url: photo.url,
         enhancedUrl: photo.enhancedUrl,
+        mediaType: "photo",
         isPrimary: i === 0,
       })
-    )
-  )
+    ),
+    ...(input.video
+      ? [
+          addBusinessMedia({
+            businessId: business.id,
+            cloudinaryPublicId: input.video.publicId,
+            url: input.video.url,
+            mediaType: "video",
+            isPrimary: false,
+          }),
+        ]
+      : []),
+  ])
+
+  if (input.product) {
+    await createProductListing({
+      businessId: business.id,
+      ownerId: input.ownerId,
+      titleEn: input.product.titleEn,
+      titleHi: input.product.titleHi,
+      descriptionEn: input.product.descriptionEn,
+      descriptionHi: input.product.descriptionHi,
+      materials: input.product.materials,
+      priceMin: input.product.priceMin,
+      priceMax: input.product.priceMax,
+      photos: input.product.photos,
+    })
+  }
 
   await attachVoiceSessionsToBusiness(input.draftId, input.ownerId, business.id)
 

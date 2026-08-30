@@ -3,9 +3,10 @@ import { notFound } from "next/navigation"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 
 import { findBusinessByCode } from "@/infra/db/repositories/business.repository"
-import { Link } from "@/i18n/navigation"
+import { getCurrentUser } from "@/infra/http/current-user"
+import { approximateLocation } from "@/lib/geo-privacy"
 import { Badge } from "@/components/ui/badge"
-import { formatPriceRange } from "@/lib/format"
+import { ProductTile } from "@/components/product/product-tile"
 
 export default async function BusinessProfilePage({
   params,
@@ -19,8 +20,16 @@ export default async function BusinessProfilePage({
   const business = await findBusinessByCode(businessCode)
   if (!business || business.status !== "approved") notFound()
 
+  const session = await getCurrentUser()
+
   const description = locale === "hi" ? business.descriptionHi : business.descriptionEn
   const cover = business.media.find((m) => m.isPrimary) ?? business.media[0]
+
+  // Real coordinates never leave the server — only the jittered result does.
+  const approxLocation =
+    business.latitude != null && business.longitude != null
+      ? approximateLocation(business.latitude, business.longitude, business.id)
+      : undefined
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8">
@@ -49,34 +58,16 @@ export default async function BusinessProfilePage({
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {business.products
             .filter((p) => p.status === "published")
-            .map((product) => {
-              const media = product.media.find((m) => m.isPrimary) ?? product.media[0]
-              return (
-                <Link
-                  key={product.id}
-                  href={`/product/${product.slug}`}
-                  className="group flex flex-col border border-border bg-card transition-colors hover:border-foreground/20"
-                >
-                  <div className="relative aspect-square w-full overflow-hidden bg-secondary">
-                    {media && (
-                      <Image
-                        src={media.enhancedUrl ?? media.url}
-                        alt={locale === "hi" ? product.titleHi ?? product.titleEn : product.titleEn}
-                        fill
-                        sizes="(min-width: 768px) 25vw, 50vw"
-                        className="object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1 p-3">
-                    <p className="text-sm font-medium text-foreground">
-                      {locale === "hi" ? product.titleHi ?? product.titleEn : product.titleEn}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{formatPriceRange(product.priceMin, product.priceMax)}</p>
-                  </div>
-                </Link>
-              )
-            })}
+            .map((product) => (
+              <ProductTile
+                key={product.id}
+                product={product}
+                businessId={business.id}
+                currentUserId={session?.sub ?? null}
+                approxLocation={approxLocation}
+                locale={locale as "en" | "hi"}
+              />
+            ))}
         </div>
       </div>
     </div>

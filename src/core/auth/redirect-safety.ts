@@ -19,3 +19,21 @@ export function sanitizeRedirectPath(path: string | null | undefined, fallback: 
   if (path.startsWith("/\\")) return fallback // backslash variant some browsers still normalize to //
   return path
 }
+
+/**
+ * A sanitized `next` path is always locale-prefixed (it's built from
+ * `req.nextUrl.pathname`, or from a `/${locale}` fallback) — required by the
+ * OAuth callback route, which hands it straight to a raw
+ * `NextResponse.redirect`. next-intl's locale-aware `router.push` from
+ * `@/i18n/navigation` expects the *opposite*: an unprefixed pathname, since
+ * it prepends the current locale itself. Passing an already-prefixed path
+ * to it double-prefixes (`/en` + `/en/sell/add` -> `/en/en/sell/add`) — strip
+ * it first whenever `next` is going through that router instead of a raw
+ * redirect.
+ */
+export function stripLocalePrefix(path: string, locale: string): string {
+  const prefix = `/${locale}`
+  if (path === prefix) return "/"
+  if (path.startsWith(`${prefix}/`)) return path.slice(prefix.length)
+  return path
+}

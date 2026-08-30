@@ -33,11 +33,21 @@ export function isWebSpeechSupported(): boolean {
 
 /** Browser-native fallback tier — used only when no server speech provider
  * is configured. Runs entirely client-side; only the resulting text ever
- * reaches the server (via /api/onboarding/voice/client-transcript). */
-export function useWebSpeech(lang: "en" | "hi") {
+ * reaches the server (via /api/onboarding/voice/client-transcript).
+ *
+ * `onUpdate`, when given, fires on every result event with the *full*
+ * text heard so far (finalized parts + the current interim chunk) — the
+ * conversational onboarding UI uses this for live captions and for its own
+ * silence-based auto-stop timer, without adding more reactive state here
+ * (a callback ref, not a re-render on every phoneme). */
+export function useWebSpeech(lang: "en" | "hi", onUpdate?: (fullText: string) => void) {
   const [isListening, setIsListening] = React.useState(false)
   const [interimTranscript, setInterimTranscript] = React.useState("")
   const recognitionRef = React.useRef<SpeechRecognitionLike | null>(null)
+  const onUpdateRef = React.useRef(onUpdate)
+  React.useEffect(() => {
+    onUpdateRef.current = onUpdate
+  }, [onUpdate])
 
   const start = React.useCallback((): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -60,6 +70,7 @@ export function useWebSpeech(lang: "en" | "hi") {
           else interim += chunk
         }
         setInterimTranscript(interim)
+        onUpdateRef.current?.((finalTranscript + " " + interim).trim())
       }
       recognition.onerror = (event) => reject(new Error(event.error ?? "speech_error"))
       recognition.onend = () => {

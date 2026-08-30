@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, ilike, gte, lte, inArray, sql } from "drizzle-orm"
+import { and, or, desc, eq, ilike, gte, lte, inArray, sql } from "drizzle-orm"
 
 import { getDb } from "../client"
 import {
@@ -7,11 +7,14 @@ import {
   businessMedia,
   products,
   productMedia,
+  productLikes,
+  inquiries,
   type NewBusiness,
   type NewBusinessMedia,
   type NewProduct,
   type NewProductMedia,
 } from "../schema"
+import { recordProductView } from "./analytics.repository"
 
 export async function createBusiness(input: NewBusiness) {
   const db = getDb()
@@ -66,7 +69,9 @@ export async function findBusinessesByOwner(ownerId: string) {
 
 /** Every product across every business the given user owns — the seller
  * dashboard's "My Catalog" and "Your Products" views. */
-export async function findProductsForOwner(ownerId: string) {
+export type ProductSort = "newest" | "oldest" | "priceAsc" | "priceDesc" | "views" | "likes"
+
+export async function findProductsForOwner(ownerId: string, opts?: { q?: string; sort?: ProductSort }) {
   const db = getDb()
   const owned = await db.query.businesses.findMany({
     where: eq(businesses.ownerId, ownerId),
@@ -74,12 +79,24 @@ export async function findProductsForOwner(ownerId: string) {
   })
   if (owned.length === 0) return []
 
+  const ownedIds = owned.map((b) => b.id)
+  const q = opts?.q?.trim()
+
+  const orderBy = {
+    newest: desc(products.createdAt),
+    oldest: products.createdAt,
+    priceAsc: products.priceMin,
+    priceDesc: desc(products.priceMin),
+    views: desc(products.viewCount),
+    likes: desc(products.likeCount),
+  }[opts?.sort ?? "newest"]
+
   return db.query.products.findMany({
-    where: inArray(
-      products.businessId,
-      owned.map((b) => b.id)
+    where: and(
+      inArray(products.businessId, ownedIds),
+      q ? or(ilike(products.titleEn, `%${q}%`), ilike(products.titleHi, `%${q}%`)) : undefined
     ),
-    orderBy: desc(products.createdAt),
+    orderBy,
     with: { media: true, business: true },
   })
 }
@@ -136,13 +153,19 @@ export async function listMarketplaceBusinesses(filters: MarketplaceFilters = {}
   if (filters.state) conditions.push(eq(businesses.state, filters.state))
   if (filters.search) {
     const term = `%${filters.search}%`
+    // A standalone query (not a raw exists-subquery in the same call) —
+    // `products` is also reached below via `with: { products: ... }`, and
+    // Drizzle's relational query builder mis-aliases a second bare
+    // reference to the same table inside a raw `sql` fragment in that case.
+    const matches = await db.query.products.findMany({
+      where: and(eq(products.status, "published"), ilike(products.titleEn, term)),
+      columns: { businessId: true },
+    })
+    const matchingBusinessIds = matches.map((m) => m.businessId)
     conditions.push(
-      sql`(${ilike(businesses.displayName, term)} or exists (
-        select 1 from ${products}
-        where ${eq(products.businessId, businesses.id)}
-          and ${eq(products.status, "published")}
-          and ${ilike(products.titleEn, term)}
-      ))`
+      matchingBusinessIds.length > 0
+        ? or(ilike(businesses.displayName, term), inArray(businesses.id, matchingBusinessIds))!
+        : ilike(businesses.displayName, term)
     )
   }
 
@@ -170,4 +193,133 @@ export async function findProductBySlug(slug: string) {
     where: eq(products.slug, slug),
     with: { media: true, business: true },
   })
+}
+
+/** Ownership checks (edit, like) need the owning business without pulling
+ * every sibling product/media the way `findBusinessesByOwner` etc. do. */
+export async function findProductById(id: string) {
+  const db = getDb()
+  return db.query.products.findFirst({
+    where: eq(products.id, id),
+    with: { media: true, business: true },
+  })
+}
+
+export async function updateProduct(
+  id: string,
+  patch: Partial<
+    Pick<
+      NewProduct,
+      "titleEn" | "titleHi" | "descriptionEn" | "descriptionHi" | "materials" | "dimensions" | "priceMin" | "priceMax" | "seoKeywords"
+    >
+  >
+) {
+  const db = getDb()
+  const [product] = await db
+    .update(products)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(products.id, id))
+    .returning()
+  return product
+}
+
+export async function incrementProductViewCount(id: string) {
+  const db = getDb()
+  const [product] = await db
+    .update(products)
+    .set({ viewCount: sql`${products.viewCount} + 1` })
+    .where(eq(products.id, id))
+    .returning({ businessId: products.businessId })
+  if (product) await recordProductView(id, product.businessId)
+}
+
+/** Idempotent per user — inserts/deletes the `product_likes` row and keeps
+ * the denormalized `likeCount` on `products` in sync in the same call. */
+export async function toggleProductLike(productId: string, userId: string): Promise<{ liked: boolean; likeCount: number }> {
+  const db = getDb()
+  const existing = await db.query.productLikes.findFirst({
+    where: and(eq(productLikes.productId, productId), eq(productLikes.userId, userId)),
+  })
+
+  if (existing) {
+    await db.delete(productLikes).where(eq(productLikes.id, existing.id))
+    const [product] = await db
+      .update(products)
+      .set({ likeCount: sql`greatest(${products.likeCount} - 1, 0)` })
+      .where(eq(products.id, productId))
+      .returning({ likeCount: products.likeCount })
+    return { liked: false, likeCount: product?.likeCount ?? 0 }
+  }
+
+  await db.insert(productLikes).values({ productId, userId })
+  const [product] = await db
+    .update(products)
+    .set({ likeCount: sql`${products.likeCount} + 1` })
+    .where(eq(products.id, productId))
+    .returning({ likeCount: products.likeCount })
+  return { liked: true, likeCount: product?.likeCount ?? 0 }
+}
+
+/** Batched like-state lookup for a list of cards (the home feed, catalog
+ * pages) — one query instead of one `hasUserLikedProduct` call per card. */
+export async function getLikedProductIds(userId: string, productIds: string[]): Promise<Set<string>> {
+  if (productIds.length === 0) return new Set()
+  const db = getDb()
+  const rows = await db.query.productLikes.findMany({
+    where: and(eq(productLikes.userId, userId), inArray(productLikes.productId, productIds)),
+    columns: { productId: true },
+  })
+  return new Set(rows.map((r) => r.productId))
+}
+
+export async function hasUserLikedProduct(productId: string, userId: string): Promise<boolean> {
+  const db = getDb()
+  const existing = await db.query.productLikes.findFirst({
+    where: and(eq(productLikes.productId, productId), eq(productLikes.userId, userId)),
+    columns: { id: true },
+  })
+  return Boolean(existing)
+}
+
+/** The home page's "Featured from the community" strip — published
+ * products from *other* approved businesses. `excludeOwnerId` keeps a
+ * seller's own listings out of their own feed (those live in My Catalog). */
+export async function listFeaturedProducts({
+  excludeOwnerId,
+  limit = 12,
+}: {
+  excludeOwnerId?: string
+  limit?: number
+} = {}) {
+  const db = getDb()
+  // Filtered in application code rather than a raw exists-subquery on
+  // `businesses` — that table is already joined once for `with: { business:
+  // true }` in this same query, and Drizzle's relational query builder
+  // mis-aliases a second bare reference to it inside a raw `sql` fragment
+  // (columns render against the wrong table). A generous buffer keeps this
+  // correct and still cheap at MVP scale.
+  const candidates = await db.query.products.findMany({
+    where: eq(products.status, "published"),
+    orderBy: desc(products.createdAt),
+    limit: limit * 4,
+    with: { media: true, business: true },
+  })
+
+  return candidates
+    .filter((p) => p.business.status === "approved" && (!excludeOwnerId || p.business.ownerId !== excludeOwnerId))
+    .slice(0, limit)
+}
+
+/** Batched so the catalog listing (one query for N products) doesn't fire
+ * an inquiry count query per card. */
+export async function countInquiriesByProductIds(productIds: string[]): Promise<Record<string, number>> {
+  if (productIds.length === 0) return {}
+  const db = getDb()
+  const rows = await db
+    .select({ productId: inquiries.productId, count: sql<number>`count(*)::int` })
+    .from(inquiries)
+    .where(inArray(inquiries.productId, productIds))
+    .groupBy(inquiries.productId)
+
+  return Object.fromEntries(rows.filter((r) => r.productId != null).map((r) => [r.productId as string, r.count]))
 }

@@ -39,8 +39,8 @@ export default async function InquiriesPage({
           : status
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-8">
-      <h1 className="font-heading text-2xl font-medium text-foreground">{t("inquiries")}</h1>
+    <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8">
+      <h1 className="font-heading text-2xl font-medium text-foreground">{t("chats")}</h1>
 
       {inquiries.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">No inquiries yet.</p>

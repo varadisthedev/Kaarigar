@@ -7,7 +7,7 @@ import { isNativeClient } from "@/infra/http/auth-cookies"
 import { requireCsrf } from "@/infra/http/csrf"
 
 const bodySchema = z.object({
-  kind: z.enum(["onboarding_photo", "avatar", "product_photo"]),
+  kind: z.enum(["onboarding_photo", "onboarding_video", "avatar", "product_photo", "product_video"]),
   draftId: z.string().min(1).max(64).optional(),
 })
 
@@ -30,13 +30,18 @@ export async function POST(req: NextRequest) {
   const { kind, draftId } = parsed.data
 
   let folder: string
-  if (kind === "onboarding_photo") {
+  if (kind === "onboarding_photo" || kind === "onboarding_video") {
     if (!draftId) return NextResponse.json({ error: "draft_id_required" }, { status: 400 })
-    folder = `Kaarigar/onboarding/${draftId}`
+    folder = kind === "onboarding_video" ? `Kaarigar/onboarding/${draftId}/video` : `Kaarigar/onboarding/${draftId}`
   } else {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
-    folder = kind === "avatar" ? `Kaarigar/avatars/${user.sub}` : `Kaarigar/products/${user.sub}`
+    folder =
+      kind === "avatar"
+        ? `Kaarigar/avatars/${user.sub}`
+        : kind === "product_video"
+          ? `Kaarigar/products/${user.sub}/video`
+          : `Kaarigar/products/${user.sub}`
   }
 
   try {

@@ -15,6 +15,34 @@
       "when": 1788092808429,
       "tag": "0001_familiar_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788099430229,
+      "tag": "0002_pink_namora",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788115933064,
+      "tag": "0003_supreme_ricochet",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788117395710,
+      "tag": "0004_colossal_sabretooth",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788119470298,
+      "tag": "0005_amused_gateway",
+      "breakpoints": true
     }
   ]
 }

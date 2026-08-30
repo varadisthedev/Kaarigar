@@ -61,7 +61,7 @@ export const messages = pgTable(
   (table) => [index("messages_inquiry_id_created_at_idx").on(table.inquiryId, table.createdAt)]
 )
 
-/** `advancePercent` is stored per order (not hardcoded) so 10% stays tunable. */
+/** `advancePercent` is stored per order (not hardcoded) so 20% stays tunable via the buyer's slider. */
 export const orders = pgTable(
   "orders",
   {
@@ -78,7 +78,7 @@ export const orders = pgTable(
     totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
     advancePercent: numeric("advance_percent", { precision: 5, scale: 2 })
       .notNull()
-      .default("10"),
+      .default("20"),
     advanceAmount: numeric("advance_amount", { precision: 10, scale: 2 }).notNull(),
     status: orderStatusEnum("status").notNull().default("pending_advance"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

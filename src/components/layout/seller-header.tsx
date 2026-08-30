@@ -34,7 +34,7 @@ export function SellerHeader({
 }) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background">
-      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <div className="flex items-center gap-2.5">
           <SellerNavDrawer role={user?.role ?? null} />
           <Link href="/" className="flex items-center gap-2">

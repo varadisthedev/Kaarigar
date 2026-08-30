@@ -1,17 +1,24 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { useTranslations, useLocale } from "next-intl"
 
 import { defaultCountry } from "@/config/countries"
 import { normalizePhoneInput, isValidE164 } from "@/core/auth/phone"
 import { apiFetch } from "@/lib/api-fetch"
 import { useCountdown } from "@/hooks/use-countdown"
-import type { BusinessDraft } from "@/core/business/draft"
+import type { BusinessDraft, ProductDraft } from "@/core/business/draft"
+import { businessQnaFields, productQnaFields } from "@/core/onboarding/qna-fields"
 
-import { MicButton } from "./mic-button"
-import { ReviewForm, draftToFormValues, type ReviewFormValues } from "./review-form"
+import { LanguageStep } from "./language-step"
+import { VoiceQna } from "./voice-qna"
+import { LocationStep, type LocationResult } from "./location-step"
+import { ProductPriceStep } from "./product-price-step"
+import { ReviewStep } from "./review-step"
+import { TalkingPrompt } from "./talking-prompt"
 import { PhotoUpload, type ReadyPhoto } from "@/components/media/photo-upload"
+import { VideoCapture, type ReadyVideo } from "@/components/media/video-capture"
 import { CountrySelect } from "@/components/auth/country-select"
 import { OtpInput } from "@/components/auth/otp-input"
 import { Button } from "@/components/ui/button"
@@ -20,22 +27,40 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 
-type Step = "voice" | "review" | "photos" | "phone" | "otp" | "submitted"
+type Step =
+  | "language"
+  | "business_qna"
+  | "location"
+  | "business_photos"
+  | "video"
+  | "product_qna"
+  | "product_price"
+  | "product_photos"
+  | "phone"
+  | "otp"
+  | "review"
+  | "submitted"
 
-export function OnboardingFlow({ hasServerSpeech }: { hasServerSpeech: boolean }) {
+export function OnboardingFlow() {
   const t = useTranslations("onboarding")
   const tAuth = useTranslations("auth")
-  const tCommon = useTranslations("common")
   const locale = useLocale() as "en" | "hi"
 
   const [draftId] = React.useState(() => crypto.randomUUID())
-  const [step, setStep] = React.useState<Step>("voice")
-  const [draft, setDraft] = React.useState<BusinessDraft | null>(null)
-  const [values, setValues] = React.useState<ReviewFormValues | null>(null)
-  const [photos, setPhotos] = React.useState<ReadyPhoto[]>([])
+  const [step, setStep] = React.useState<Step>("language")
+
+  const [businessDraft, setBusinessDraft] = React.useState<Partial<BusinessDraft>>({})
+  const [location, setLocation] = React.useState<LocationResult>({})
+  const [businessPhotos, setBusinessPhotos] = React.useState<ReadyPhoto[]>([])
+  const [video, setVideo] = React.useState<ReadyVideo | null>(null)
+  const [productDraft, setProductDraft] = React.useState<Partial<ProductDraft>>({})
+  const [productPrice, setProductPrice] = React.useState<{ priceMin?: number; priceMax?: number }>({})
+  const [productPhotos, setProductPhotos] = React.useState<ReadyPhoto[]>([])
 
   // Phone/OTP sub-state — identical mechanics to the login page, but this
-  // step comes *after* the form and photos are already filled in, per spec.
+  // step comes *after* everything else is filled in, per spec: the artisan
+  // stays a guest through the whole conversation, and only gets an account
+  // right at the end.
   const [dialCode, setDialCode] = React.useState(defaultCountry.dialCode)
   const [nationalNumber, setNationalNumber] = React.useState("")
   const [pending, setPending] = React.useState(false)
@@ -44,18 +69,6 @@ export function OnboardingFlow({ hasServerSpeech }: { hasServerSpeech: boolean }
   const resend = useCountdown(60)
 
   const phoneE164 = normalizePhoneInput(dialCode, nationalNumber)
-
-  function handleVoiceResult({ draft }: { transcript: string; draft: BusinessDraft }) {
-    setDraft(draft)
-    setValues(draftToFormValues(draft, locale))
-    setStep("review")
-  }
-
-  function handleTypeInstead() {
-    setDraft({ confidence: 0 })
-    setValues(draftToFormValues({}, locale))
-    setStep("review")
-  }
 
   async function sendOtp() {
     setError(null)
@@ -83,8 +96,7 @@ export function OnboardingFlow({ hasServerSpeech }: { hasServerSpeech: boolean }
     }
   }
 
-  async function verifyAndSubmit(code: string) {
-    if (!values) return
+  async function verifyOtp(code: string) {
     setError(null)
     setPending(true)
     try {
@@ -104,21 +116,47 @@ export function OnboardingFlow({ hasServerSpeech }: { hasServerSpeech: boolean }
         )
         return
       }
+      setError(null)
+      setStep("review")
+    } finally {
+      setPending(false)
+    }
+  }
 
+  async function submitNow() {
+    setError(null)
+    setPending(true)
+    try {
       const submitRes = await apiFetch("/api/onboarding/submit", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           draftId,
-          displayName: values.businessName || "Untitled business",
-          craftCategory: values.craftCategory || "Other",
-          descriptionEn: locale === "en" ? values.description : draft?.descriptionEn,
-          descriptionHi: locale === "hi" ? values.description : draft?.descriptionHi,
-          district: values.district || undefined,
-          state: values.state || undefined,
-          yearsExperience: values.yearsExperience ? Number(values.yearsExperience) : undefined,
-          monthlyCapacity: values.monthlyCapacity || undefined,
-          photos,
+          displayName: businessDraft.businessName || "Untitled business",
+          craftCategory: businessDraft.craftCategory || "Other",
+          descriptionEn: businessDraft.descriptionEn,
+          descriptionHi: businessDraft.descriptionHi,
+          district: location.district || undefined,
+          state: location.state || undefined,
+          yearsExperience: businessDraft.yearsExperience,
+          monthlyCapacity: businessDraft.monthlyCapacity,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          photos: businessPhotos,
+          video: video ?? undefined,
+          product:
+            productPhotos.length > 0
+              ? {
+                  titleEn: productDraft.titleEn || "Untitled product",
+                  titleHi: productDraft.titleHi,
+                  descriptionEn: productDraft.descriptionEn,
+                  descriptionHi: productDraft.descriptionHi,
+                  materials: productDraft.materials,
+                  priceMin: productPrice.priceMin,
+                  priceMax: productPrice.priceMax,
+                  photos: productPhotos,
+                }
+              : undefined,
         }),
       })
       if (!submitRes.ok) {
@@ -131,49 +169,53 @@ export function OnboardingFlow({ hasServerSpeech }: { hasServerSpeech: boolean }
     }
   }
 
-  if (step === "voice") {
+  if (step === "language") {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>{t("startTitle")}</CardTitle>
-          <CardDescription>{t("startSubtitle")}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-6 py-8">
-          <MicButton
+        <CardContent className="pt-5">
+          <LanguageStep onContinue={() => setStep("business_qna")} />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (step === "business_qna") {
+    return (
+      <Card>
+        <CardContent className="pt-5">
+          <VoiceQna
             draftId={draftId}
             locale={locale}
             purpose="business_onboarding"
-            hasServerSpeech={hasServerSpeech}
-            onResult={handleVoiceResult}
+            fields={businessQnaFields(locale)}
+            initialDraft={businessDraft}
+            onComplete={(draft) => {
+              setBusinessDraft(draft)
+              setStep("location")
+            }}
           />
-          <Button variant="link" size="sm" onClick={handleTypeInstead}>
-            {t("typeInstead")}
-          </Button>
         </CardContent>
       </Card>
     )
   }
 
-  if (step === "review" && values) {
+  if (step === "location") {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>{t("reviewTitle")}</CardTitle>
-          <CardDescription>{t("reviewSubtitle")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ReviewForm values={values} onChange={setValues} locale={locale} />
+        <CardContent className="pt-5">
+          <LocationStep
+            locale={locale}
+            onContinue={(result) => {
+              setLocation(result)
+              setStep("business_photos")
+            }}
+          />
         </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={() => setStep("photos")}>
-            {tCommon("proceed")}
-          </Button>
-        </CardFooter>
       </Card>
     )
   }
 
-  if (step === "photos") {
+  if (step === "business_photos") {
     return (
       <Card>
         <CardHeader>
@@ -181,11 +223,90 @@ export function OnboardingFlow({ hasServerSpeech }: { hasServerSpeech: boolean }
           <CardDescription>{t("photosSubtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <PhotoUpload kind="onboarding_photo" draftId={draftId} onChange={setPhotos} />
+          <PhotoUpload kind="onboarding_photo" draftId={draftId} onChange={setBusinessPhotos} />
         </CardContent>
         <CardFooter>
-          <Button className="w-full" onClick={() => setStep("phone")} disabled={photos.length === 0}>
-            {tCommon("proceed")}
+          <Button className="w-full" onClick={() => setStep("video")} disabled={businessPhotos.length === 0}>
+            {t("qnaNext")}
+          </Button>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  if (step === "video") {
+    return (
+      <Card>
+        <CardContent className="flex flex-col gap-4 pt-5">
+          <VideoCapture draftId={draftId} onChange={setVideo} />
+        </CardContent>
+        <CardFooter className="flex flex-col items-stretch gap-2">
+          <Button className="w-full" onClick={() => setStep("product_qna")} disabled={!video}>
+            {t("qnaNext")}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setStep("product_qna")}>
+            {t("videoSkip")}
+          </Button>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  if (step === "product_qna") {
+    return (
+      <Card>
+        <CardContent className="pt-5">
+          <VoiceQna
+            draftId={draftId}
+            locale={locale}
+            purpose="product_catalog"
+            fields={productQnaFields(locale)}
+            initialDraft={productDraft}
+            onComplete={(draft) => {
+              setProductDraft(draft)
+              setStep("product_price")
+            }}
+          />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (step === "product_price") {
+    return (
+      <Card>
+        <CardContent className="pt-5">
+          <ProductPriceStep
+            locale={locale}
+            onContinue={(price) => {
+              setProductPrice(price)
+              setStep("product_photos")
+            }}
+          />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (step === "product_photos") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("productPhotosTitle")}</CardTitle>
+          <CardDescription>{t("productPhotosSubtitle")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TalkingPrompt
+            promptKey="promptProductPhotosIntro"
+            locale={locale}
+            text={t("promptProductPhotosIntro")}
+            className="mb-4 flex items-start gap-2"
+          />
+          <PhotoUpload kind="onboarding_photo" draftId={draftId} onChange={setProductPhotos} />
+        </CardContent>
+        <CardFooter>
+          <Button className="w-full" onClick={() => setStep("phone")} disabled={productPhotos.length === 0}>
+            {t("qnaNext")}
           </Button>
         </CardFooter>
       </Card>
@@ -251,7 +372,7 @@ export function OnboardingFlow({ hasServerSpeech }: { hasServerSpeech: boolean }
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <OtpInput onComplete={verifyAndSubmit} disabled={pending} invalid={Boolean(error)} />
+          <OtpInput onComplete={verifyOtp} disabled={pending} invalid={Boolean(error)} />
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-2">
           <Button variant="ghost" size="sm" disabled={resend.isActive || pending} onClick={sendOtp}>
@@ -262,14 +383,44 @@ export function OnboardingFlow({ hasServerSpeech }: { hasServerSpeech: boolean }
     )
   }
 
+  if (step === "review") {
+    return (
+      <Card>
+        <CardContent className="pt-5">
+          <ReviewStep
+            locale={locale}
+            businessDraft={businessDraft}
+            location={location}
+            businessPhotos={businessPhotos}
+            video={video}
+            productDraft={productDraft}
+            productPrice={productPrice}
+            productPhotos={productPhotos}
+            submitting={pending}
+            error={error}
+            onSubmit={submitNow}
+          />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <Card>
-      <CardHeader>
+    <Card className="relative overflow-hidden">
+      <Image
+        src="/flower.png"
+        alt=""
+        width={1312}
+        height={1199}
+        className="pointer-events-none absolute -top-10 -right-10 size-56 object-contain opacity-10"
+      />
+      <CardHeader className="relative">
         <CardTitle>{t("submittedTitle")}</CardTitle>
         <CardDescription>{t("submittedSubtitle")}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">{t("submittedTrackHint")}</p>
+        {productPhotos.length > 0 && <p className="text-sm text-muted-foreground">{t("submittedProductHint")}</p>}
       </CardContent>
     </Card>
   )

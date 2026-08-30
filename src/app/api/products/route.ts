@@ -21,7 +21,14 @@ const bodySchema = z.object({
   leadTimeDays: z.number().int().positive().optional(),
   seoKeywords: z.array(z.string()).optional(),
   photos: z
-    .array(z.object({ url: z.string().url(), publicId: z.string(), enhancedUrl: z.string().url().optional() }))
+    .array(
+      z.object({
+        url: z.string().url(),
+        publicId: z.string(),
+        enhancedUrl: z.string().url().optional(),
+        mediaType: z.enum(["photo", "video"]).optional(),
+      })
+    )
     .min(1),
 })
 

@@ -1,11 +1,14 @@
 import { apiFetch } from "@/lib/api-fetch"
 
-export type UploadKind = "onboarding_photo" | "avatar" | "product_photo"
+export type UploadKind = "onboarding_photo" | "onboarding_video" | "avatar" | "product_photo" | "product_video"
 
 export type UploadedAsset = { url: string; publicId: string; cloudName: string }
 
 /** Gets a signed upload slot from our server, then uploads directly to
- * Cloudinary — the API secret never touches the browser. */
+ * Cloudinary — the API secret never touches the browser. Resource type
+ * (image vs video) is chosen by which Cloudinary endpoint we POST to, not by
+ * anything in the signature itself, so the signing route needs no changes
+ * beyond knowing which folder a kind belongs in. */
 export async function uploadToCloudinary(
   file: File | Blob,
   kind: UploadKind,
@@ -29,7 +32,8 @@ export async function uploadToCloudinary(
   form.append("signature", signed.signature)
   form.append("folder", signed.folder)
 
-  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloudName}/image/upload`, {
+  const resourceType = kind === "onboarding_video" || kind === "product_video" ? "video" : "image"
+  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloudName}/${resourceType}/upload`, {
     method: "POST",
     body: form,
   })

@@ -1,6 +1,12 @@
 import "server-only"
 
-import { createProduct, addProductMedia, findBusinessById } from "@/infra/db/repositories/business.repository"
+import {
+  createProduct,
+  addProductMedia,
+  findBusinessById,
+  findProductById,
+  updateProduct,
+} from "@/infra/db/repositories/business.repository"
 import { generateUniqueSlug } from "./slug"
 
 export type CreateProductInput = {
@@ -18,7 +24,7 @@ export type CreateProductInput = {
   priceMax?: number
   leadTimeDays?: number
   seoKeywords?: string[]
-  photos: { url: string; publicId: string; enhancedUrl?: string }[]
+  photos: { url: string; publicId: string; enhancedUrl?: string; mediaType?: "photo" | "video" }[]
 }
 
 export type CreateProductResult =
@@ -52,6 +58,10 @@ export async function createProductListing(input: CreateProductInput): Promise<C
     status: business.status === "approved" ? "published" : "draft",
   })
 
+  // The primary thumbnail (used everywhere a single image represents the
+  // product — cards, marketplace grid) must be a photo, never a video.
+  const firstPhotoIndex = input.photos.findIndex((p) => (p.mediaType ?? "photo") === "photo")
+
   await Promise.all(
     input.photos.map((photo, i) =>
       addProductMedia({
@@ -59,10 +69,46 @@ export async function createProductListing(input: CreateProductInput): Promise<C
         cloudinaryPublicId: photo.publicId,
         url: photo.url,
         enhancedUrl: photo.enhancedUrl,
-        isPrimary: i === 0,
+        mediaType: photo.mediaType ?? "photo",
+        isPrimary: firstPhotoIndex === -1 ? i === 0 : i === firstPhotoIndex,
       })
     )
   )
 
   return { ok: true, product: { id: product.id, slug: product.slug } }
+}
+
+export type UpdateProductInput = {
+  productId: string
+  ownerId: string
+  titleEn?: string
+  descriptionEn?: string
+  materials?: string[]
+  dimensions?: string
+  priceMin?: number
+  priceMax?: number
+  seoKeywords?: string[]
+}
+
+export type UpdateProductResult = { ok: true } | { ok: false; error: "not_found" | "forbidden" }
+
+/** Status is never editable here — it's system-decided (draft on creation,
+ * published once the owning business is approved; see createProductListing).
+ * Sellers can only edit their own listing content and tags. */
+export async function updateProductListing(input: UpdateProductInput): Promise<UpdateProductResult> {
+  const product = await findProductById(input.productId)
+  if (!product) return { ok: false, error: "not_found" }
+  if (product.business.ownerId !== input.ownerId) return { ok: false, error: "forbidden" }
+
+  await updateProduct(input.productId, {
+    titleEn: input.titleEn,
+    descriptionEn: input.descriptionEn,
+    materials: input.materials,
+    dimensions: input.dimensions,
+    priceMin: input.priceMin != null ? String(input.priceMin) : undefined,
+    priceMax: input.priceMax != null ? String(input.priceMax) : undefined,
+    seoKeywords: input.seoKeywords,
+  })
+
+  return { ok: true }
 }

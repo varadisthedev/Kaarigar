@@ -5,36 +5,52 @@ import { createRazorpayOrder } from "@/infra/payments/razorpay.client"
 import { findInquiryById } from "@/infra/db/repositories/inquiries.repository"
 import { createOrder, findOrderById, createPayment } from "@/infra/db/repositories/orders.repository"
 
-const ADVANCE_PERCENT = 10
+export const DEFAULT_ADVANCE_PERCENT = 20
+export const MIN_ADVANCE_PERCENT = 10
+export const MAX_ADVANCE_PERCENT = 50
 
 export type CreateOrderResult =
-  | { ok: true; order: { id: string; totalAmount: string; advanceAmount: string } }
+  | { ok: true; order: { id: string; totalAmount: string; advanceAmount: string; advancePercent: string } }
   | { ok: false; error: "not_found" | "forbidden" }
 
 /** Buyer and seller have agreed on a total (in chat) — this records that
- * agreement as an order with a 10% advance, before any payment is attempted. */
+ * agreement as an order with a buyer-adjustable advance (20% suggested,
+ * 10-50% range via the slider on the order dialog), before any payment is attempted. */
 export async function createOrderFromInquiry(input: {
   inquiryId: string
   buyerId: string
   totalAmount: number
+  advancePercent?: number
 }): Promise<CreateOrderResult> {
   const inquiry = await findInquiryById(input.inquiryId)
   if (!inquiry) return { ok: false, error: "not_found" }
   if (inquiry.buyerId !== input.buyerId) return { ok: false, error: "forbidden" }
 
-  const advanceAmount = Math.round(input.totalAmount * (ADVANCE_PERCENT / 100) * 100) / 100
+  const advancePercent = Math.min(
+    MAX_ADVANCE_PERCENT,
+    Math.max(MIN_ADVANCE_PERCENT, input.advancePercent ?? DEFAULT_ADVANCE_PERCENT)
+  )
+  const advanceAmount = Math.round(input.totalAmount * (advancePercent / 100) * 100) / 100
 
   const order = await createOrder({
     inquiryId: input.inquiryId,
     buyerId: input.buyerId,
     businessId: inquiry.businessId,
     totalAmount: String(input.totalAmount),
-    advancePercent: String(ADVANCE_PERCENT),
+    advancePercent: String(advancePercent),
     advanceAmount: String(advanceAmount),
     status: "pending_advance",
   })
 
-  return { ok: true, order: { id: order.id, totalAmount: order.totalAmount, advanceAmount: order.advanceAmount } }
+  return {
+    ok: true,
+    order: {
+      id: order.id,
+      totalAmount: order.totalAmount,
+      advanceAmount: order.advanceAmount,
+      advancePercent: order.advancePercent,
+    },
+  }
 }
 
 export type InitiatePaymentResult =

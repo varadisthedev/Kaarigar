@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Menu, Store, Package, Sparkles, Users, ShoppingBag, User, Shield, Building2, LogIn } from "lucide-react"
+import { Menu, Store, Package, Sparkles, MessageCircle, TrendingUp, ShoppingBag, User, Shield, Building2, LogIn } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { Link } from "@/i18n/navigation"
@@ -25,8 +25,9 @@ export function SellerNavDrawer({ role }: { role: "artisan" | "buyer" | "admin" 
         { href: "/sell/businesses", label: t("myBusinesses"), icon: Building2 },
         { href: "/sell/products", label: t("myCatalog"), icon: Package },
         { href: "/sell/price-check", label: t("checkPrice"), icon: Sparkles },
+        { href: "/sell/analytics", label: t("analytics"), icon: TrendingUp },
         { href: "/sell/orders", label: t("orders"), icon: ShoppingBag },
-        { href: "/inquiries", label: t("findBuyers"), icon: Users },
+        { href: "/inquiries", label: t("chats"), icon: MessageCircle },
         { href: "/account", label: t("account"), icon: User },
       ]
     : [

@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { getPusherClient, inquiryChannelName } from "@/infra/messaging/pusher-client"
 import type { Message } from "@/infra/db/schema"
 
 const POLL_INTERVAL_MS = 4000
@@ -18,6 +19,16 @@ export function ChatThread({ inquiryId, currentUserId }: { inquiryId: string; cu
   const [draft, setDraft] = React.useState("")
   const lastTimestampRef = React.useRef<Date | undefined>(undefined)
   const listRef = React.useRef<HTMLDivElement>(null)
+  const seenIdsRef = React.useRef<Set<string>>(new Set())
+
+  function appendMessages(incoming: Message[]) {
+    if (incoming.length === 0) return
+    const fresh = incoming.filter((m) => !seenIdsRef.current.has(m.id))
+    if (fresh.length === 0) return
+    for (const m of fresh) seenIdsRef.current.add(m.id)
+    setMessages((prev) => [...prev, ...fresh])
+    lastTimestampRef.current = new Date(fresh[fresh.length - 1].createdAt)
+  }
 
   const poll = React.useCallback(async () => {
     const since = lastTimestampRef.current
@@ -25,19 +36,33 @@ export function ChatThread({ inquiryId, currentUserId }: { inquiryId: string; cu
     const res = await apiFetch(url)
     if (!res.ok) return
     const data = await res.json()
-    if (data.messages.length > 0) {
-      setMessages((prev) => [...prev, ...data.messages])
-      lastTimestampRef.current = new Date(data.messages[data.messages.length - 1].createdAt)
-    }
+    appendMessages(data.messages)
   }, [inquiryId])
 
+  // Load history once on mount regardless of transport.
   React.useEffect(() => {
     poll()
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") poll()
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [poll])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inquiryId])
+
+  // Real-time delivery via Pusher when configured; otherwise fall back to polling.
+  React.useEffect(() => {
+    const pusher = getPusherClient()
+    if (!pusher) {
+      const id = setInterval(() => {
+        if (document.visibilityState === "visible") poll()
+      }, POLL_INTERVAL_MS)
+      return () => clearInterval(id)
+    }
+
+    const channel = pusher.subscribe(inquiryChannelName(inquiryId))
+    const handler = (message: Message) => appendMessages([message])
+    channel.bind("new-message", handler)
+    return () => {
+      channel.unbind("new-message", handler)
+      pusher.unsubscribe(inquiryChannelName(inquiryId))
+    }
+  }, [inquiryId, poll])
 
   React.useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
@@ -54,8 +79,7 @@ export function ChatThread({ inquiryId, currentUserId }: { inquiryId: string; cu
     })
     if (res.ok) {
       const data = await res.json()
-      setMessages((prev) => [...prev, data.message])
-      lastTimestampRef.current = new Date(data.message.createdAt)
+      appendMessages([data.message])
     }
   }
 

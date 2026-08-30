@@ -5,6 +5,7 @@ import { pollingTransport, authorizeInquiryAccess } from "@/core/messaging/messa
 import { getCurrentUser } from "@/infra/http/current-user"
 import { requireCsrf } from "@/infra/http/csrf"
 import { isNativeClient } from "@/infra/http/auth-cookies"
+import { notifyNewMessage } from "@/infra/messaging/pusher-server"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
@@ -39,5 +40,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 })
 
   const message = await pollingTransport.send({ inquiryId: id, senderId: user.sub, body: parsed.data.body })
+  await notifyNewMessage(id, message)
   return NextResponse.json({ message })
 }

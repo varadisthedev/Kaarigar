@@ -15,6 +15,13 @@ export async function findOrderById(id: string) {
   return db.query.orders.findFirst({ where: eq(orders.id, id), with: { business: true, buyer: true } })
 }
 
+const ORDER_WITH_DETAILS = {
+  buyer: true,
+  business: true,
+  payments: true,
+  inquiry: { with: { product: { with: { media: true } } } },
+} as const
+
 /** Every order against any business the given user owns — the seller
  * dashboard's Orders view. */
 export async function findOrdersForSeller(sellerId: string) {
@@ -31,7 +38,17 @@ export async function findOrdersForSeller(sellerId: string) {
       owned.map((b) => b.id)
     ),
     orderBy: desc(orders.createdAt),
-    with: { buyer: true, business: true, payments: true },
+    with: ORDER_WITH_DETAILS,
+  })
+}
+
+/** Every order a buyer has placed — the buyer-facing "My Orders" view. */
+export async function findOrdersForBuyer(buyerId: string) {
+  const db = getDb()
+  return db.query.orders.findMany({
+    where: eq(orders.buyerId, buyerId),
+    orderBy: desc(orders.createdAt),
+    with: ORDER_WITH_DETAILS,
   })
 }
 
