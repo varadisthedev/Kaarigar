@@ -1,5 +1,5 @@
 """
-CraftMate ML microservice.
+Kaarigar ML microservice.
 
 Two independent capabilities, each degrading gracefully on its own:
   - POST /price/predict  — always available once the service boots; the
@@ -21,7 +21,7 @@ from typing import Optional
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="CraftMate ML Service", version="1.0.0")
+app = FastAPI(title="Kaarigar ML Service", version="1.0.0")
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "pricing_model.joblib")
 ASR_MODEL_ID = os.environ.get("ASR_MODEL_ID")  # e.g. an AI4Bharat IndicWav2Vec/IndicConformer checkpoint

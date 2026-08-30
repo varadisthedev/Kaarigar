@@ -9,6 +9,7 @@ import { priceSuggestions } from "./pricing"
 import { inquiries, messages, orders, payments } from "./marketplace"
 import { reviewActions, auditLog } from "./admin"
 import { kycDocuments } from "./kyc"
+import { oauthAccounts } from "./oauth"
 
 // All cross-table `relations()` wiring lives here, in one file, imported
 // after every table module has already been evaluated — this is what lets
@@ -22,6 +23,11 @@ export const usersRelations = relations(users, ({ many }) => ({
   buyerInquiries: many(inquiries),
   kycDocuments: many(kycDocuments),
   auditLogEntries: many(auditLog),
+  oauthAccounts: many(oauthAccounts),
+}))
+
+export const oauthAccountsRelations = relations(oauthAccounts, ({ one }) => ({
+  user: one(users, { fields: [oauthAccounts.userId], references: [users.id] }),
 }))
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({

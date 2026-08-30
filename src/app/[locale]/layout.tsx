@@ -21,7 +21,7 @@ const notoSansDevanagari = Noto_Sans_Devanagari({
 const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
-  title: "CraftMate — Indian Artisans, Direct to Business",
+  title: "Kaarigar — Indian Artisans, Direct to Business",
   description:
     "A B2B marketplace connecting India's marginalized artisans and weavers directly with buyers.",
 }

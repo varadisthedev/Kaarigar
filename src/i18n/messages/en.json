@@ -1,6 +1,7 @@
 {
   "common": {
-    "appName": "CraftMate",
+    "appName": "Kaarigar",
+    "tagline": "Empowering Artisans. Connecting Markets.",
     "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
@@ -21,17 +22,24 @@
   "nav": {
     "home": "Home",
     "marketplace": "Marketplace",
-    "sell": "Sell on CraftMate",
+    "sell": "Sell on Kaarigar",
     "myBusiness": "My Business",
     "inquiries": "Inquiries",
     "admin": "Admin",
     "account": "Account",
     "login": "Log in",
     "logout": "Log out",
-    "language": "Language"
+    "language": "Language",
+    "languageDescription": "Changes the language for the entire site, not just this page.",
+    "menu": "Menu",
+    "myBusinesses": "My Businesses",
+    "myCatalog": "My Catalog",
+    "orders": "Orders",
+    "checkPrice": "Check Price",
+    "findBuyers": "Find Buyers"
   },
   "auth": {
-    "title": "Log in to CraftMate",
+    "title": "Log in to Kaarigar",
     "subtitle": "We'll send a one-time code to verify your number.",
     "countryCode": "Country",
     "phoneLabel": "Mobile number",
@@ -48,7 +56,14 @@
     "errorOtpExpired": "This code has expired. Request a new one.",
     "errorTooManyAttempts": "Too many attempts. Request a new code.",
     "errorRateLimited": "Too many requests. Please wait a moment and try again.",
-    "devOtpHint": "Dev mode — OTP sent to server console (no SMS provider configured)."
+    "devOtpHint": "Dev mode — OTP sent to server console (no SMS provider configured).",
+    "or": "or",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "oauthErrorNotConfigured": "This sign-in option isn't set up yet — please use your phone number.",
+    "oauthErrorDenied": "Sign-in was cancelled.",
+    "oauthErrorInvalidState": "That sign-in link expired. Please try again.",
+    "oauthErrorFailed": "Something went wrong signing you in. Please try again or use your phone number."
   },
   "onboarding": {
     "startTitle": "Tell us about your craft",
@@ -104,7 +119,9 @@
     "priceRange": "Price range",
     "sendInquiry": "Send inquiry",
     "suggestedPrice": "Suggested price",
-    "suggestedPriceHint": "Based on similar products in the market."
+    "suggestedPriceHint": "Based on similar products in the market.",
+    "statusPublished": "Published",
+    "statusDraft": "Draft"
   },
   "inquiry": {
     "title": "Send an inquiry",
@@ -117,6 +134,12 @@
     "messagePlaceholder": "Type a message…",
     "call": "Call",
     "callLockedHint": "Available once the business accepts your inquiry.",
+    "noPhoneOnFile": "This account signed in without a phone number.",
+    "accept": "Accept inquiry",
+    "decline": "Decline",
+    "statusOpen": "Awaiting response",
+    "statusAccepted": "Accepted — you can now call or pay an advance",
+    "statusDeclined": "Declined",
     "advancePayment": "Pay advance",
     "advanceAmount": "Advance ({percent}%)",
     "payNow": "Pay now"
@@ -141,8 +164,11 @@
     "statusPendingReview": "Under review",
     "statusRejected": "Not approved",
     "addProduct": "Add product",
+    "quickActions": "Quick Actions",
+    "yourProducts": "Your Products",
     "viewListing": "View listing",
     "noBusinesses": "You haven't registered a business yet.",
+    "noProductsYet": "No products yet — add your first one.",
     "newProductTitle": "Add a product",
     "newProductSubtitle": "Describe the product by voice — we'll write it up for you.",
     "priceMin": "Minimum price",
@@ -159,6 +185,7 @@
     "avatarDelete": "Remove photo",
     "name": "Name",
     "phone": "Phone number",
+    "email": "Email",
     "locale": "Preferred language"
   }
 }

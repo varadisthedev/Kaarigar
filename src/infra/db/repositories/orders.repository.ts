@@ -1,8 +1,8 @@
 import "server-only"
-import { eq } from "drizzle-orm"
+import { desc, eq, inArray } from "drizzle-orm"
 
 import { getDb } from "../client"
-import { orders, payments, type NewOrder, type NewPayment } from "../schema"
+import { orders, payments, businesses, type NewOrder, type NewPayment } from "../schema"
 
 export async function createOrder(input: NewOrder) {
   const db = getDb()
@@ -13,6 +13,26 @@ export async function createOrder(input: NewOrder) {
 export async function findOrderById(id: string) {
   const db = getDb()
   return db.query.orders.findFirst({ where: eq(orders.id, id), with: { business: true, buyer: true } })
+}
+
+/** Every order against any business the given user owns — the seller
+ * dashboard's Orders view. */
+export async function findOrdersForSeller(sellerId: string) {
+  const db = getDb()
+  const owned = await db.query.businesses.findMany({
+    where: eq(businesses.ownerId, sellerId),
+    columns: { id: true },
+  })
+  if (owned.length === 0) return []
+
+  return db.query.orders.findMany({
+    where: inArray(
+      orders.businessId,
+      owned.map((b) => b.id)
+    ),
+    orderBy: desc(orders.createdAt),
+    with: { buyer: true, business: true, payments: true },
+  })
 }
 
 export async function createPayment(input: NewPayment) {

@@ -54,7 +54,7 @@ export async function initiateAdvancePayment(input: {
 
   const razorpayOrder = await createRazorpayOrder({
     amountRupees: Number(order.advanceAmount),
-    receipt: `craftmate_order_${order.id}`,
+    receipt: `Kaarigar_order_${order.id}`,
   })
 
   await createPayment({

@@ -32,11 +32,11 @@ export async function POST(req: NextRequest) {
   let folder: string
   if (kind === "onboarding_photo") {
     if (!draftId) return NextResponse.json({ error: "draft_id_required" }, { status: 400 })
-    folder = `craftmate/onboarding/${draftId}`
+    folder = `Kaarigar/onboarding/${draftId}`
   } else {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
-    folder = kind === "avatar" ? `craftmate/avatars/${user.sub}` : `craftmate/products/${user.sub}`
+    folder = kind === "avatar" ? `Kaarigar/avatars/${user.sub}` : `Kaarigar/products/${user.sub}`
   }
 
   try {

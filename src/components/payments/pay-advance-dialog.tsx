@@ -61,7 +61,7 @@ export function PayAdvanceDialog({ inquiryId }: { inquiryId: string }) {
         amount: paymentData.amount,
         currency: paymentData.currency,
         order_id: paymentData.razorpayOrderId,
-        name: "CraftMate",
+        name: "Kaarigar",
         description: "Advance payment",
         handler: () => setPaid(true),
         theme: { color: "#B8502F" },

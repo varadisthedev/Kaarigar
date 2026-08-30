@@ -7,6 +7,13 @@ import { Link } from "@/i18n/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
+const STATUS_VARIANT = {
+  open: "warning",
+  accepted: "success",
+  declined: "destructive",
+  closed: "secondary",
+} as const
+
 export default async function InquiriesPage({
   params,
 }: {
@@ -15,11 +22,21 @@ export default async function InquiriesPage({
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations("nav")
+  const tInquiry = await getTranslations("inquiry")
 
   const user = await getCurrentUser()
   if (!user) redirect(`/${locale}/login`)
 
   const inquiries = await listInquiriesForUser(user.sub)
+
+  const statusLabel = (status: (typeof inquiries)[number]["status"]) =>
+    status === "open"
+      ? tInquiry("statusOpen")
+      : status === "accepted"
+        ? tInquiry("statusAccepted")
+        : status === "declined"
+          ? tInquiry("statusDeclined")
+          : status
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-8">
@@ -37,7 +54,7 @@ export default async function InquiriesPage({
                     <p className="font-medium text-foreground">{inquiry.business.displayName}</p>
                     <p className="text-xs text-muted-foreground">{inquiry.message}</p>
                   </div>
-                  <Badge variant={inquiry.status === "open" ? "warning" : "success"}>{inquiry.status}</Badge>
+                  <Badge variant={STATUS_VARIANT[inquiry.status]}>{statusLabel(inquiry.status)}</Badge>
                 </CardContent>
               </Card>
             </Link>

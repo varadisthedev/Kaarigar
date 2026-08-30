@@ -14,7 +14,7 @@ export async function findInquiryById(id: string) {
   const db = getDb()
   return db.query.inquiries.findFirst({
     where: eq(inquiries.id, id),
-    with: { business: true, product: true, buyer: true },
+    with: { business: { with: { owner: true } }, product: true, buyer: true },
   })
 }
 

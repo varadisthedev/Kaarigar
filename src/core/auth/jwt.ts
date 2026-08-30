@@ -15,7 +15,8 @@ export const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60
 
 export type AccessTokenPayload = {
   sub: string // user id
-  phone: string
+  // Nullable — an OAuth-only signup has no phone number (see users.ts).
+  phone: string | null
   role: "artisan" | "buyer" | "admin"
 }
 
@@ -37,11 +38,12 @@ export async function signAccessToken(payload: AccessTokenPayload): Promise<stri
 export async function verifyAccessToken(token: string): Promise<AccessTokenPayload | null> {
   try {
     const { payload } = await jwtVerify(token, accessSecret())
-    if (typeof payload.sub !== "string" || typeof payload.phone !== "string") return null
+    if (typeof payload.sub !== "string") return null
+    if (payload.phone !== null && typeof payload.phone !== "string") return null
     if (payload.role !== "artisan" && payload.role !== "buyer" && payload.role !== "admin") {
       return null
     }
-    return { sub: payload.sub, phone: payload.phone, role: payload.role }
+    return { sub: payload.sub, phone: (payload.phone as string | null) ?? null, role: payload.role }
   } catch {
     return null
   }

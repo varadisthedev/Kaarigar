@@ -1,6 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server"
 
 import { listMarketplaceBusinesses } from "@/infra/db/repositories/business.repository"
+import { PRICE_BANDS, MOQ_BANDS } from "@/config/marketplace-bands"
 import { BusinessCard } from "@/components/marketplace/business-card"
 import { MarketplaceFilters } from "@/components/marketplace/marketplace-filters"
 
@@ -9,18 +10,31 @@ export default async function MarketplacePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ category?: string; state?: string; search?: string }>
+  searchParams: Promise<{ category?: string; state?: string; search?: string; price?: string; moq?: string }>
 }) {
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations("marketplace")
   const filters = await searchParams
 
-  const businesses = await listMarketplaceBusinesses({
+  const priceBand = filters.price ? PRICE_BANDS[filters.price] : undefined
+  const moqMax = filters.moq ? MOQ_BANDS[filters.moq] : undefined
+
+  const allBusinesses = await listMarketplaceBusinesses({
     category: filters.category,
     state: filters.state,
     search: filters.search,
+    priceMin: priceBand?.min,
+    priceMax: priceBand?.max,
+    moqMax,
   })
+
+  // The repository filters *which products* attach to each business, not
+  // which businesses come back — a business with no product in the
+  // requested price/MOQ band still returns, just with an empty product
+  // list. Drop those here so the grid only shows genuine matches.
+  const hasProductFilter = priceBand != null || moqMax != null
+  const businesses = hasProductFilter ? allBusinesses.filter((b) => b.products.length > 0) : allBusinesses
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
@@ -29,7 +43,13 @@ export default async function MarketplacePage({
         <p className="mt-1 text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <MarketplaceFilters category={filters.category} state={filters.state} search={filters.search} />
+      <MarketplaceFilters
+        category={filters.category}
+        state={filters.state}
+        search={filters.search}
+        price={filters.price}
+        moq={filters.moq}
+      />
 
       {businesses.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">{t("noResults")}</p>

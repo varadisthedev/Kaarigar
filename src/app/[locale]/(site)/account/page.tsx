@@ -38,8 +38,14 @@ export default async function AccountPage({
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">{t("phone")}</dt>
-              <dd className="text-foreground">{user.phoneE164}</dd>
+              <dd className="text-foreground">{user.phoneE164 ?? "—"}</dd>
             </div>
+            {user.email && (
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">{t("email")}</dt>
+                <dd className="text-foreground">{user.email}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-muted-foreground">{t("locale")}</dt>
               <dd className="text-foreground">{user.locale === "hi" ? "हिन्दी" : "English"}</dd>

@@ -14,14 +14,14 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="font-heading text-lg font-medium text-foreground">
-          CraftMate
+          Kaarigar
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm md:flex">
           <Link href="/marketplace" className="text-foreground/80 hover:text-foreground">
             {t("marketplace")}
           </Link>
-          <Link href="/sell" className="text-foreground/80 hover:text-foreground">
+          <Link href="/" className="text-foreground/80 hover:text-foreground">
             {t("sell")}
           </Link>
           {user && (

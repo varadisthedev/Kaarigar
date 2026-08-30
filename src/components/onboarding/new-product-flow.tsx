@@ -99,7 +99,7 @@ export function NewProductFlow({
       })
       if (res.ok) {
         setStep("done")
-        setTimeout(() => router.push("/sell"), 1500)
+        setTimeout(() => router.push("/"), 1500)
       }
     } finally {
       setPending(false)

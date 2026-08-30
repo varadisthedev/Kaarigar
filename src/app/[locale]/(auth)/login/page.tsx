@@ -7,11 +7,13 @@ import { useSearchParams } from "next/navigation"
 import { useRouter } from "@/i18n/navigation"
 import { defaultCountry } from "@/config/countries"
 import { normalizePhoneInput, isValidE164 } from "@/core/auth/phone"
+import { sanitizeRedirectPath } from "@/core/auth/redirect-safety"
 import { apiFetch } from "@/lib/api-fetch"
 import { useCountdown } from "@/hooks/use-countdown"
 
 import { CountrySelect } from "@/components/auth/country-select"
 import { OtpInput } from "@/components/auth/otp-input"
+import { OAuthButtons } from "@/components/auth/oauth-buttons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,7 +27,21 @@ export default function LoginPage() {
   const locale = useLocale()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const next = searchParams.get("next") ?? "/"
+  const next = sanitizeRedirectPath(searchParams.get("next"), `/${locale}`)
+
+  const oauthErrorCode = searchParams.get("oauthError")
+  const oauthErrorMessage = oauthErrorCode
+    ? t(
+        (
+          {
+            not_configured: "oauthErrorNotConfigured",
+            denied: "oauthErrorDenied",
+            invalid_state: "oauthErrorInvalidState",
+            failed: "oauthErrorFailed",
+          } as const
+        )[oauthErrorCode] ?? "oauthErrorFailed"
+      )
+    : null
 
   const [step, setStep] = React.useState<Step>("phone")
   const [dialCode, setDialCode] = React.useState(defaultCountry.dialCode)
@@ -90,12 +106,12 @@ export default function LoginPage() {
 
   if (step === "otp") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("otpTitle")}</CardTitle>
+      <Card className="gap-6 border-0 bg-transparent p-0 shadow-none">
+        <CardHeader className="gap-1 p-0">
+          <CardTitle className="text-2xl font-semibold">{t("otpTitle")}</CardTitle>
           <CardDescription>{t("otpSubtitle", { phone: phoneE164 })}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 p-0">
           {devCode && (
             <Alert>
               <AlertDescription>
@@ -110,7 +126,7 @@ export default function LoginPage() {
           )}
           <OtpInput onComplete={verifyOtp} disabled={pending} invalid={Boolean(error)} />
         </CardContent>
-        <CardFooter className="flex flex-col items-stretch gap-3">
+        <CardFooter className="flex flex-col items-stretch gap-3 p-0">
           <Button
             variant="ghost"
             size="sm"
@@ -128,12 +144,17 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("title")}</CardTitle>
+    <Card className="gap-6 border-0 bg-transparent p-0 shadow-none">
+      <CardHeader className="gap-1 p-0">
+        <CardTitle className="text-2xl font-semibold">{t("title")}</CardTitle>
         <CardDescription>{t("subtitle")}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-4 p-0">
+        {oauthErrorMessage && (
+          <Alert variant="destructive">
+            <AlertDescription>{oauthErrorMessage}</AlertDescription>
+          </Alert>
+        )}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="phone">{t("phoneLabel")}</Label>
           <div className="flex gap-2">
@@ -156,10 +177,11 @@ export default function LoginPage() {
           </Alert>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col items-stretch gap-4 p-0">
         <Button className="w-full" onClick={sendOtp} disabled={pending}>
           {t("sendOtp")}
         </Button>
+        <OAuthButtons locale={locale} next={next} />
       </CardFooter>
     </Card>
   )

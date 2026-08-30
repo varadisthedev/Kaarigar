@@ -1,4 +1,4 @@
-# CraftMate ML Service
+# Kaarigar ML Service
 
 A small Python microservice, deployed **separately** from the Next.js app
 (Vercel can't run a persistent Python process). It backs two things:
@@ -58,7 +58,7 @@ browser fallback.
 `pip install -r requirements.txt && python train.py`, start command
 `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
 
-**Docker**: `docker build -t craftmate-ml . && docker run -p 8000:8000 craftmate-ml`
+**Docker**: `docker build -t Kaarigar-ml . && docker run -p 8000:8000 Kaarigar-ml`
 — builds the lightweight (pricing-only) image; see the Dockerfile for adding
 the ASR extras.
 

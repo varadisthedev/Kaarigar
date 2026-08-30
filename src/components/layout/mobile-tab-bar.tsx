@@ -1,11 +1,13 @@
 "use client"
 
-import { Home, Store, PlusCircle, MessageSquare, User } from "lucide-react"
+import { Home, Store, MessageSquare, User } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { Link, usePathname } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 
+// No separate "Sell" tab — / (Home) is the seller dashboard/entry point now,
+// so a second tab pointing at the same destination would just duplicate it.
 export function MobileTabBar({ isAuthenticated }: { isAuthenticated: boolean }) {
   const t = useTranslations("nav")
   const pathname = usePathname()
@@ -13,7 +15,6 @@ export function MobileTabBar({ isAuthenticated }: { isAuthenticated: boolean }) 
   const items = [
     { href: "/", label: t("home"), icon: Home },
     { href: "/marketplace", label: t("marketplace"), icon: Store },
-    { href: "/sell", label: t("sell"), icon: PlusCircle },
     { href: "/inquiries", label: t("inquiries"), icon: MessageSquare },
     { href: isAuthenticated ? "/account" : "/login", label: isAuthenticated ? t("account") : t("login"), icon: User },
   ] as const

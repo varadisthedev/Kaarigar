@@ -5,6 +5,8 @@ export const userStatusEnum = pgEnum("user_status", ["active", "suspended"])
 
 export const otpPurposeEnum = pgEnum("otp_purpose", ["login", "phone_verify"])
 
+export const oauthProviderEnum = pgEnum("oauth_provider", ["google", "github"])
+
 export const businessStatusEnum = pgEnum("business_status", [
   "draft",
   "pending_review",

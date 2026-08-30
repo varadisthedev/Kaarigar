@@ -14,6 +14,11 @@ export async function findUserById(id: string) {
   return db.query.users.findFirst({ where: eq(users.id, id) })
 }
 
+export async function findUserByEmail(email: string) {
+  const db = getDb()
+  return db.query.users.findFirst({ where: eq(users.email, email) })
+}
+
 export async function createUser(input: NewUser) {
   const db = getDb()
   const [user] = await db.insert(users).values(input).returning()

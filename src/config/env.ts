@@ -55,6 +55,15 @@ const schema = z.object({
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
   NEXT_PUBLIC_RAZORPAY_KEY_ID: z.string().optional(),
 
+  // --- OAuth login (Google / GitHub) — additive to phone/OTP, not a
+  // replacement. Redirect URIs to register with each provider:
+  //   {NEXT_PUBLIC_APP_URL}/api/auth/oauth/google/callback
+  //   {NEXT_PUBLIC_APP_URL}/api/auth/oauth/github/callback
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
+
   // --- Seed / bootstrap ---
   ADMIN_PHONE_NUMBERS: z.string().optional(), // comma-separated E.164
 })
@@ -81,13 +90,13 @@ function devFallbackSecret(name: string): string {
   if (isProd) {
     throw new Error(
       `[env] ${name} is required in production. Generate one with:\n` +
-        `  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
+      `  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
     )
   }
   // Stable per-process, not per-request — sessions just don't survive a dev restart.
   // Web Crypto (not node:crypto) so this module stays loadable from the Edge
   // Runtime (proxy.ts -> jwt.ts -> env.ts).
-  const key = `__craftmate_dev_${name}`
+  const key = `__Kaarigar_dev_${name}`
   const g = globalThis as unknown as Record<string, string>
   if (!g[key]) {
     const bytes = new Uint8Array(48)
@@ -95,7 +104,7 @@ function devFallbackSecret(name: string): string {
     g[key] = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
     console.warn(
       `[env] ${name} is not set — using an ephemeral development secret. ` +
-        `Set it in .env.local before deploying.`
+      `Set it in .env.local before deploying.`
     )
   }
   return g[key]
@@ -124,6 +133,8 @@ export const features = {
     env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET
   ),
   razorpay: Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET),
+  oauthGoogle: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
+  oauthGithub: Boolean(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET),
 } as const
 
 export function adminPhoneNumbers(): string[] {

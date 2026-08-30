@@ -1,4 +1,4 @@
-# CraftMate
+# Kaarigar
 
 An AI-driven market-linkage and smart-cataloging platform for marginalized Indian artisans — SIH26090 (Ministry of Social Justice and Empowerment). An artisan speaks about their craft in Hindi or English, AI turns that into a professional, bilingual, SEO-ready B2B listing, and — once a human reviewer approves it — the business goes live on an IndiaMART-style marketplace where buyers can browse, chat, and pay a 10% advance.
 
@@ -10,7 +10,7 @@ This is the **web MVP** of a mobile-first product. The final target is React Nat
 - **Neon Postgres** via **Drizzle ORM** (`@neondatabase/serverless` HTTP driver — no connection pooling issues on serverless)
 - **next-intl** for English/Hindi, both locale-prefixed (`/en/…`, `/hi/…`) for per-language SEO
 - **Tailwind v4** + a hand-adapted shadcn preset (Base UI primitives, not Radix) — see [Design system](#design-system)
-- **OTP-only auth** (MSG91 or a console fallback) + custom JWT sessions with refresh-token rotation and reuse detection
+- **Phone/OTP** (MSG91 or a console fallback) as the primary login, plus optional **Google/GitHub OAuth** — both land in the same custom JWT session system, with refresh-token rotation and reuse detection
 - **Sarvam AI** → a companion **Python/FastAPI ML service** (`services/ml/`) → the browser's **Web Speech API**, as a 3-tier speech-to-text fallback chain
 - **Gemini** for structured extraction (voice → listing) and pricing rationale, with deterministic offline fallbacks for both
 - **Cloudinary** for storage/enhancement + client-side WASM background removal (`@imgly/background-removal`)
@@ -69,7 +69,7 @@ services/ml/    Separate Python/FastAPI service — pricing model + optional ASR
 
 Every swappable external dependency (OTP delivery, speech-to-text, messaging transport) sits behind an interface in `core/*/ports.ts`, implemented in `infra/`. The database itself isn't treated as swappable — `core` services call plain repository functions in `infra/db/repositories/*` directly, which is what "no Drizzle in core" means in practice here.
 
-**Auth**: phone + OTP only, no passwords anywhere. OTP codes are argon2id-hashed at rest; refresh tokens are opaque random strings stored only as an HMAC digest, with rotation and reuse-detection (a replayed, already-rotated token revokes its entire session family). CSRF is a double-submit cookie, checked on every mutating route.
+**Auth**: no passwords anywhere. Phone + OTP is the primary, preferred path — OTP codes are argon2id-hashed at rest. Google/GitHub OAuth is additive (`core/auth/oauth.service.ts`, `infra/oauth/*`), resolving to the exact same `users` row/session system rather than a parallel one: an OAuth account either links to an existing user by verified email, or creates a new `role='buyer'` account. `users.phoneE164`/`email` are both nullable — an app-level guarantee (not a DB constraint) ensures at least one is set. Refresh tokens (from either login path) are opaque random strings stored only as an HMAC digest, with rotation and reuse-detection (a replayed, already-rotated token revokes its entire session family). CSRF is a double-submit cookie for same-origin JSON calls, plus a separate signed `state` cookie for the OAuth redirect round-trip.
 
 **Voice pipeline**: MediaRecorder captures audio → Sarvam AI → the Python ML service → (if neither is configured) the browser's own Web Speech API, decided once per session via a capability check rather than reactively per attempt. Every capture is logged to `voice_sessions` for audit/replay in the admin queue, regardless of which tier produced it.
 

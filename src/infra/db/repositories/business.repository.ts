@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, ilike, gte, lte, sql } from "drizzle-orm"
+import { and, desc, eq, ilike, gte, lte, inArray, sql } from "drizzle-orm"
 
 import { getDb } from "../client"
 import {
@@ -61,6 +61,26 @@ export async function findBusinessesByOwner(ownerId: string) {
   return db.query.businesses.findMany({
     where: eq(businesses.ownerId, ownerId),
     orderBy: desc(businesses.createdAt),
+  })
+}
+
+/** Every product across every business the given user owns — the seller
+ * dashboard's "My Catalog" and "Your Products" views. */
+export async function findProductsForOwner(ownerId: string) {
+  const db = getDb()
+  const owned = await db.query.businesses.findMany({
+    where: eq(businesses.ownerId, ownerId),
+    columns: { id: true },
+  })
+  if (owned.length === 0) return []
+
+  return db.query.products.findMany({
+    where: inArray(
+      products.businessId,
+      owned.map((b) => b.id)
+    ),
+    orderBy: desc(products.createdAt),
+    with: { media: true, business: true },
   })
 }
 
