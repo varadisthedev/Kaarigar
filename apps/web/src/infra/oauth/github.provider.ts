@@ -19,7 +19,11 @@ export const githubOAuthProvider: OAuthProvider = {
   async exchangeCode({ code, redirectUri }) {
     const res = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        accept: "application/json",
+        "user-agent": "Kaarigar-App",
+      },
       body: new URLSearchParams({
         client_id: env.GITHUB_CLIENT_ID!,
         client_secret: env.GITHUB_CLIENT_SECRET!,
@@ -38,7 +42,11 @@ export const githubOAuthProvider: OAuthProvider = {
   },
 
   async fetchProfile(accessToken) {
-    const headers = { authorization: `Bearer ${accessToken}`, accept: "application/vnd.github+json" }
+    const headers = {
+      authorization: `Bearer ${accessToken}`,
+      accept: "application/vnd.github+json",
+      "user-agent": "Kaarigar-App",
+    }
 
     const userRes = await fetch("https://api.github.com/user", { headers })
     if (!userRes.ok) {

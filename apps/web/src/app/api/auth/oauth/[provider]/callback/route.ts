@@ -52,7 +52,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
       ip: clientIp(req),
     })
 
-    const res = NextResponse.redirect(new URL(next, req.nextUrl.origin))
+    let destination = next
+    if (!user.profileCompletedAt) {
+      destination = `/${locale}/account/onboarding${next && next !== `/${locale}` ? `?redirect=${encodeURIComponent(next)}` : ""}`
+    }
+
+    const res = NextResponse.redirect(new URL(destination, req.nextUrl.origin))
     attachAuthCookies(res, tokens)
     clearOAuthFlowCookies(res)
     return res

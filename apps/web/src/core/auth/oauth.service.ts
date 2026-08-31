@@ -43,10 +43,14 @@ export async function findOrCreateUserFromOAuth(
     }
   }
 
+  const baseHandle = (profile.name || "artisan").toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 16)
+  const generatedUsername = `${baseHandle || "user"}_${Math.floor(1000 + Math.random() * 9000)}`
+
   const newUser = await createUser({
     email: profile.email,
-    name: profile.name,
-    avatarUrl: profile.avatarUrl,
+    name: profile.name ?? "Artisan User",
+    username: generatedUsername,
+    avatarUrl: profile.avatarUrl || "/avatars/male.svg",
     role: "buyer",
     locale: "en",
   })

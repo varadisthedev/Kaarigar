@@ -16,11 +16,16 @@ const LANGUAGES = [
 /**
  * `variant="compact"` — a small always-visible switcher for the header.
  * `variant="full"` — a labeled section (heading + "changes the whole site"
- * copy + full-height rows) for the nav drawer, so language switching reads
- * as a real site-wide setting rather than a per-page toggle easy to miss.
- * Three locales are fully supported: English, Hindi, and Marathi.
+ * copy + full-height rows) for the nav drawer.
+ * `isNavbar={true}` — stylized pill container matching the terracotta navbar theme.
  */
-export function LanguageSwitcher({ variant = "compact" }: { variant?: "compact" | "full" }) {
+export function LanguageSwitcher({
+  variant = "compact",
+  isNavbar = false,
+}: {
+  variant?: "compact" | "full"
+  isNavbar?: boolean
+}) {
   const locale = useLocale()
   const t = useTranslations("nav")
   const tCommon = useTranslations("common")
@@ -51,8 +56,8 @@ export function LanguageSwitcher({ variant = "compact" }: { variant?: "compact" 
                 disabled={!lang.enabled}
                 onClick={() => lang.enabled && switchTo(lang.code)}
                 className={cn(
-                  "flex h-12 items-center justify-between border border-border px-4 text-sm",
-                  active ? "border-primary bg-primary/5 text-foreground" : "text-foreground",
+                  "flex h-12 items-center justify-between border border-border px-4 text-sm rounded-xl transition-colors",
+                  active ? "border-primary bg-primary/10 font-semibold text-primary" : "text-foreground hover:bg-secondary",
                   !lang.enabled && "text-muted-foreground opacity-60"
                 )}
               >
@@ -67,6 +72,36 @@ export function LanguageSwitcher({ variant = "compact" }: { variant?: "compact" 
             )
           })}
         </div>
+      </div>
+    )
+  }
+
+  if (isNavbar) {
+    return (
+      <div
+        className="relative flex items-center gap-0.5 rounded-full border border-white/25 bg-black/20 p-0.5 shadow-inner"
+        aria-label={t("language")}
+      >
+        {LANGUAGES.map((lang) => {
+          const active = lang.enabled && locale === lang.code
+          return (
+            <button
+              key={lang.code}
+              type="button"
+              disabled={!lang.enabled}
+              onClick={() => lang.enabled && switchTo(lang.code)}
+              title={!lang.enabled ? tCommon("comingSoon") : undefined}
+              className={cn(
+                "flex h-7 sm:h-8 items-center rounded-full px-2 sm:px-2.5 text-xs font-semibold transition-all",
+                active
+                  ? "bg-white text-[#B34726] shadow-sm"
+                  : "text-white/80 hover:text-white hover:bg-white/10"
+              )}
+            >
+              {lang.code === "en" ? "EN" : lang.code === "hi" ? "हि" : "मर"}
+            </button>
+          )
+        })}
       </div>
     )
   }
@@ -88,7 +123,7 @@ export function LanguageSwitcher({ variant = "compact" }: { variant?: "compact" 
           onClick={() => lang.enabled && switchTo(lang.code)}
           title={!lang.enabled ? tCommon("comingSoon") : undefined}
           className={cn(
-            "flex h-10 items-center rounded-full px-3 text-sm font-medium transition-colors",
+            "flex h-9 items-center rounded-full px-3 text-xs font-semibold transition-colors",
             lang.enabled && locale === lang.code
               ? "bg-primary text-primary-foreground shadow-sm"
               : lang.enabled

@@ -9,8 +9,15 @@ import { Sheet, SheetTrigger, SheetContent, SheetTitle } from "@/components/ui/s
 import { Separator } from "@/components/ui/separator"
 import { LanguageSwitcher } from "./language-switcher"
 import { LogoutButton } from "@/components/account/logout-button"
+import { cn } from "@/lib/utils"
 
-export function SellerNavDrawer({ role }: { role: "artisan" | "buyer" | "admin" | null }) {
+export function SellerNavDrawer({
+  role,
+  isTerracotta = false,
+}: {
+  role: "artisan" | "buyer" | "admin" | null
+  isTerracotta?: boolean
+}) {
   const t = useTranslations("nav")
   const [open, setOpen] = React.useState(false)
 
@@ -39,9 +46,14 @@ export function SellerNavDrawer({ role }: { role: "artisan" | "buyer" | "admin" 
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         aria-label={t("menu")}
-        className="flex size-11 items-center justify-center text-foreground"
+        className={cn(
+          "flex size-10 items-center justify-center rounded-full transition-colors",
+          isTerracotta
+            ? "text-white hover:bg-white/10"
+            : "text-foreground hover:bg-secondary"
+        )}
       >
-        <Menu className="size-6" />
+        <Menu className="size-5.5 sm:size-6" />
       </SheetTrigger>
       <SheetContent>
         <div className="flex flex-col gap-1 border-b border-border p-4">
