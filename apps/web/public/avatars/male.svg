@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGradMale" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF3C7" />
+      <stop offset="100%" stop-color="#FDE68A" />
+    </linearGradient>
+    <linearGradient id="turbanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B8502F" />
+      <stop offset="100%" stop-color="#9A3412" />
+    </linearGradient>
+    <linearGradient id="skinGradMale" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E0A97E" />
+      <stop offset="100%" stop-color="#D19263" />
+    </linearGradient>
+    <linearGradient id="kurtaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#115E59" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="96" fill="url(#bgGradMale)" stroke="#D97706" stroke-width="4" />
+
+  <!-- Body / Kurta -->
+  <path d="M40 185 C40 145, 70 135, 100 135 C130 135, 160 145, 160 185 Z" fill="url(#kurtaGrad)" />
+  <path d="M90 135 L100 160 L110 135 Z" fill="#CCFBF1" opacity="0.8" />
+  <circle cx="100" cy="168" r="2.5" fill="#D97706" />
+  <circle cx="100" cy="178" r="2.5" fill="#D97706" />
+
+  <!-- Neck -->
+  <rect x="88" y="112" width="24" height="28" rx="6" fill="url(#skinGradMale)" />
+
+  <!-- Head / Face -->
+  <ellipse cx="100" cy="92" rx="34" ry="40" fill="url(#skinGradMale)" />
+
+  <!-- Ears -->
+  <ellipse cx="64" cy="94" rx="7" ry="10" fill="#D19263" />
+  <ellipse cx="136" cy="94" rx="7" ry="10" fill="#D19263" />
+  <circle cx="64" cy="98" r="2" fill="#D97706" />
+  <circle cx="136" cy="98" r="2" fill="#D97706" />
+
+  <!-- Eyes -->
+  <ellipse cx="86" cy="88" rx="4.5" ry="3.5" fill="#1C1917" />
+  <ellipse cx="114" cy="88" rx="4.5" ry="3.5" fill="#1C1917" />
+  <circle cx="87.5" cy="86.5" r="1.2" fill="#FFFFFF" />
+  <circle cx="115.5" cy="86.5" r="1.2" fill="#FFFFFF" />
+
+  <!-- Eyebrows -->
+  <path d="M78 80 C83 77, 91 78, 93 81" stroke="#451A03" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M122 80 C117 77, 109 78, 107 81" stroke="#451A03" stroke-width="3" stroke-linecap="round" fill="none" />
+
+  <!-- Tilak -->
+  <path d="M98 72 L100 66 L102 72 Z" fill="#DC2626" />
+  <circle cx="100" cy="75" r="2" fill="#D97706" />
+
+  <!-- Nose -->
+  <path d="M100 88 C100 95, 96 98, 100 101 C102 101, 104 99, 104 97" stroke="#B45309" stroke-width="2" stroke-linecap="round" fill="none" />
+
+  <!-- Mustache -->
+  <path d="M82 107 C90 103, 98 108, 100 110 C102 108, 110 103, 118 107 C113 111, 103 112, 100 111 C97 112, 87 111, 82 107 Z" fill="#292524" />
+
+  <!-- Smile / Lips -->
+  <path d="M94 118 C97 121, 103 121, 106 118" stroke="#9A3412" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+  <!-- Turban / Pagri -->
+  <path d="M60 76 C55 45, 80 25, 100 25 C125 25, 148 45, 140 76 C130 55, 115 50, 100 50 C85 50, 70 55, 60 76 Z" fill="url(#turbanGrad)" />
+  <path d="M62 65 C78 50, 122 50, 138 65 C132 50, 118 42, 100 42 C82 42, 68 50, 62 65 Z" fill="#EA580C" />
+  <path d="M96 25 C98 18, 102 18, 104 25 Z" fill="#FBBF24" />
+  <circle cx="100" cy="50" r="5" fill="#FBBF24" stroke="#B45309" stroke-width="1.5" />
+</svg>

@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api-fetch"
 
-export type UploadKind = "onboarding_photo" | "onboarding_video" | "avatar" | "product_photo" | "product_video"
+export type UploadKind = "onboarding_photo" | "onboarding_video" | "avatar" | "product_photo" | "product_video" | "chat_photo"
 
 export type UploadedAsset = { url: string; publicId: string; cloudName: string }
 

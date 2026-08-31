@@ -51,5 +51,8 @@ export async function POST(req: NextRequest) {
   }
 
   const business = await submitBusiness({ ...parsed.data, ownerId: user.sub })
-  return NextResponse.json({ ok: true, business: { id: business.id, status: business.status } })
+  return NextResponse.json({
+    ok: true,
+    business: { id: business.id, status: business.status, businessCode: business.businessCode },
+  })
 }

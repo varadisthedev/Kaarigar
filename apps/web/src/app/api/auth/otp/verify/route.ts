@@ -12,7 +12,7 @@ const bodySchema = z.object({
   countryCode: z.string().min(2).max(6),
   code: z.string().length(6),
   purpose: z.enum(["login", "phone_verify"]).default("login"),
-  locale: z.enum(["en", "hi"]).default("en"),
+  locale: z.enum(["en", "hi", "mr"]).default("en"),
 })
 
 export async function POST(req: NextRequest) {
@@ -40,7 +40,15 @@ export async function POST(req: NextRequest) {
 
   const body = {
     ok: true,
-    user: { id: user.id, name: user.name, role: user.role, locale: user.locale },
+    user: {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
+      role: user.role,
+      locale: user.locale,
+      profileCompleted: Boolean(user.profileCompletedAt),
+    },
     ...(native
       ? {
           accessToken: tokens.accessToken,

@@ -11,7 +11,7 @@ export default async function OnboardPage({
   setRequestLocale(locale)
 
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col justify-center gap-6 px-4 py-12">
+    <div className="mx-auto flex min-h-svh w-full max-w-4xl flex-col justify-center gap-6 px-4 py-8 sm:py-12">
       <OnboardingFlow />
     </div>
   )

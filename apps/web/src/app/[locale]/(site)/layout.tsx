@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server"
 import { getCurrentUser } from "@/infra/http/current-user"
 import { findUserById } from "@/infra/db/repositories/users.repository"
 import { SellerHeader } from "@/components/layout/seller-header"
-import { MobileTabBar } from "@/components/layout/mobile-tab-bar"
+import { SellerTabBar } from "@/components/layout/seller-tab-bar"
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentUser()
@@ -20,8 +20,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         tagline={t("tagline")}
         loginLabel={tNav("login")}
       />
-      <main className="flex-1 pb-16 md:pb-0">{children}</main>
-      <MobileTabBar isAuthenticated={Boolean(session)} />
+      <main className="flex-1 pb-20">{children}</main>
+      <SellerTabBar />
     </div>
   )
 }

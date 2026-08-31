@@ -33,7 +33,8 @@ export default function AddProductScreen() {
   const [description, setDescription] = React.useState("")
   const [priceMin, setPriceMin] = React.useState("")
   const [priceMax, setPriceMax] = React.useState("")
-  const [suggestion, setSuggestion] = React.useState<{ min: number; max: number } | null>(null)
+  const [materialCost, setMaterialCost] = React.useState("")
+  const [suggestion, setSuggestion] = React.useState<{ price: number; marketMin: number; marketMax: number } | null>(null)
   const [photos, setPhotos] = React.useState<Photo[]>([])
   const [submitted, setSubmitted] = React.useState(false)
 
@@ -83,13 +84,29 @@ export default function AddProductScreen() {
       const res = await apiFetch("/api/pricing/suggest", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ category: business?.craftCategory, region: business?.state, descriptionEn: description, locale: "en" }),
+        body: JSON.stringify({
+          category: business?.craftCategory,
+          region: business?.state,
+          descriptionEn: description,
+          materialCost: materialCost ? Number(materialCost) : undefined,
+          locale: "en",
+        }),
       })
       if (!res.ok) return null
       return res.json()
     },
-    onSuccess: (data) => data && setSuggestion({ min: data.min, max: data.max }),
+    onSuccess: (data) => data && setSuggestion({ price: data.price, marketMin: data.marketMin, marketMax: data.marketMax }),
   })
+
+  // Auto-fetch a price suggestion as soon as there's enough product info to
+  // ground it, rather than waiting for a manual tap — mirrors the web
+  // onboarding flow's behavior (product-price-step.tsx).
+  React.useEffect(() => {
+    if (business && (title || description) && !suggestPrice.isPending && suggestion == null) {
+      suggestPrice.mutate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [business, title, description])
 
   async function pickPhotos() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -199,6 +216,17 @@ export default function AddProductScreen() {
         </View>
 
         <View style={styles.field}>
+          <Text style={styles.label}>Material cost (₹)</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={materialCost}
+            onChangeText={setMaterialCost}
+            placeholder="What raw materials cost you"
+          />
+        </View>
+
+        <View style={styles.field}>
           <Text style={styles.label}>Price range (₹)</Text>
           <View style={styles.priceRow}>
             <TextInput style={[styles.input, { flex: 1 }]} keyboardType="numeric" value={priceMin} onChangeText={setPriceMin} placeholder="Min" />
@@ -206,20 +234,24 @@ export default function AddProductScreen() {
           </View>
           <Pressable onPress={() => suggestPrice.mutate()} disabled={suggestPrice.isPending}>
             <Text style={styles.link}>
-              {suggestPrice.isPending ? "Getting suggestion..." : "Get a market price suggestion"}
+              {suggestPrice.isPending ? "Getting suggestion..." : "Refresh market price suggestion"}
             </Text>
           </Pressable>
-          {suggestion && (
-            <Pressable
-              onPress={() => {
-                setPriceMin(String(suggestion.min))
-                setPriceMax(String(suggestion.max))
-              }}
-            >
-              <Text style={styles.suggestion}>
-                Suggested: ₹{suggestion.min} – ₹{suggestion.max} · tap to use
+          {suggestion != null && (
+            <View style={styles.priceBreakdown}>
+              {materialCost !== "" && <Text style={styles.breakdownLine}>Material cost: ₹{materialCost}</Text>}
+              <Text style={styles.breakdownLine}>
+                Market range: ₹{suggestion.marketMin} – ₹{suggestion.marketMax}
               </Text>
-            </Pressable>
+              <Pressable
+                onPress={() => {
+                  setPriceMin(String(suggestion.price))
+                  setPriceMax(String(suggestion.price))
+                }}
+              >
+                <Text style={styles.suggestion}>Suggested price: ₹{suggestion.price} · tap to use</Text>
+              </Pressable>
+            </View>
           )}
         </View>
 
@@ -270,7 +302,9 @@ const styles = StyleSheet.create({
   multiline: { minHeight: 80, textAlignVertical: "top" },
   priceRow: { flexDirection: "row", gap: 8 },
   link: { color: "#7a4fd6", fontSize: 13, marginTop: 4 },
-  suggestion: { color: "#2a7a2a", fontSize: 13, marginTop: 2 },
+  priceBreakdown: { marginTop: 8, gap: 3, borderWidth: 1, borderColor: "#eee", borderRadius: 8, padding: 10, backgroundColor: "#fafafa" },
+  breakdownLine: { fontSize: 13, color: "#555" },
+  suggestion: { color: "#2a7a2a", fontSize: 13, fontWeight: "600", marginTop: 2 },
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   photoWrap: { width: 80, height: 80, borderRadius: 8, overflow: "hidden" },
   photo: { width: "100%", height: "100%" },

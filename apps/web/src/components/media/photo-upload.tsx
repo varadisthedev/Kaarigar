@@ -1,13 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { Camera, Loader2, Sparkles, Trash2, X, Play } from "lucide-react"
+import { Camera, Loader2, Sparkles, Trash2, X, Play, GitCompareArrows } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 import { uploadToCloudinary, type UploadKind, type UploadedAsset } from "@/lib/cloudinary-upload"
 import { removeImageBackground } from "@/lib/background-removal"
 import { cloudinaryEnhancedUrl } from "@/core/media/cloudinary-transform"
+import { BeforeAfterSlider } from "./before-after-slider"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 type PhotoState = {
   id: string
@@ -40,6 +42,7 @@ export function PhotoUpload({
 }) {
   const t = useTranslations("onboarding")
   const [photos, setPhotos] = React.useState<PhotoState[]>([])
+  const [comparePhotoId, setComparePhotoId] = React.useState<string | null>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   const emitChange = React.useCallback((next: PhotoState[]) => {
@@ -174,6 +177,16 @@ export function PhotoUpload({
                     </button>
                   )}
                   <div className="flex items-center gap-1">
+                    {!isVideo && enhancedUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setComparePhotoId(photo.id)}
+                        title={t("photosCompare")}
+                        className="p-1 text-muted-foreground hover:text-primary"
+                      >
+                        <GitCompareArrows className="size-3.5" />
+                      </button>
+                    )}
                     {!isVideo && (
                       <button
                         type="button"
@@ -235,6 +248,27 @@ export function PhotoUpload({
           e.target.value = ""
         }}
       />
+
+      <Dialog open={comparePhotoId != null} onOpenChange={(open) => !open && setComparePhotoId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>{t("photosCompareTitle")}</DialogTitle>
+          {(() => {
+            const photo = photos.find((p) => p.id === comparePhotoId)
+            if (!photo?.uploaded) return null
+            const enhancedUrl = photo.bgRemovedAsset?.url ?? cloudinaryEnhancedUrl(photo.uploaded.cloudName, photo.uploaded.publicId)
+            return (
+              <div className="mt-2">
+                <BeforeAfterSlider
+                  beforeUrl={photo.previewUrl}
+                  afterUrl={enhancedUrl}
+                  beforeLabel={t("photosBefore")}
+                  afterLabel={t("photosAfter")}
+                />
+              </div>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

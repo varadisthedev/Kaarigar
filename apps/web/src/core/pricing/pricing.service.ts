@@ -15,12 +15,18 @@ export type PriceSuggestionInput = {
   leadTimeDays: number
   experienceYears: number
   descriptionEn?: string
-  locale: "en" | "hi"
+  /** What the artisan says raw materials cost them — informational context
+   * for the rationale, not something that overrides the market-derived
+   * estimate (the PS explicitly wants this shown, not baked in silently). */
+  materialCost?: number
+  locale: "en" | "hi" | "mr"
 }
 
 export type PriceSuggestionResult = {
-  min: number
-  max: number
+  price: number
+  marketMin: number
+  marketMax: number
+  materialCost?: number
   confidence: number
   engine: "ml_service" | "rules_engine" | "gemini"
   rationaleEn: string
@@ -30,39 +36,43 @@ export type PriceSuggestionResult = {
 const REFINEMENT_SCHEMA = {
   type: GeminiType.OBJECT,
   properties: {
-    min: { type: GeminiType.NUMBER },
-    max: { type: GeminiType.NUMBER },
+    price: { type: GeminiType.NUMBER },
     rationaleEn: { type: GeminiType.STRING },
     rationaleHi: { type: GeminiType.STRING },
   },
-  required: ["min", "max", "rationaleEn", "rationaleHi"],
+  required: ["price", "rationaleEn", "rationaleHi"],
 }
 
-const SYSTEM_INSTRUCTION = `You refine a preliminary B2B wholesale price range for a handcrafted product, given a starting estimate from a pricing model and the product's own description.
-- Nudge the range up or down by at most 20% based on what the description suggests about quality/materials/complexity — don't invent a wildly different price.
-- Write rationaleEn and rationaleHi as one short, concrete sentence each explaining the suggested range in plain language an artisan would understand (e.g. "Based on similar cotton block-print items and your 10 years of experience"), not marketing language.`
+const SYSTEM_INSTRUCTION = `You refine a preliminary B2B wholesale price for a handcrafted product, given a starting estimate from a pricing model, the product's own description, and (when available) what the artisan says raw materials cost them.
+- Nudge the price up or down by at most 20% based on what the description suggests about quality/materials/complexity — don't invent a wildly different price.
+- The final price must stay comfortably above the stated material cost when one is given — never suggest a price that leaves the artisan with a negligible or negative margin.
+- Write rationaleEn and rationaleHi as one short, concrete sentence each explaining the suggested price in plain language an artisan would understand (e.g. "Based on similar cotton block-print items and your 10 years of experience"), not marketing language.`
 
 /**
  * Chain: ML service -> deterministic rules engine -> Gemini refinement.
  * Each stage is optional; the rules engine is the only one guaranteed to run,
  * so a suggestion is always produced even with zero API keys configured.
  * Every suggestion is persisted with the engine that ultimately produced it.
+ * Returns both the market range and a single point estimate — the caller
+ * shows "material cost / market range / suggested price" per the PS.
  */
 export async function suggestPrice(input: PriceSuggestionInput): Promise<PriceSuggestionResult> {
-  let min: number
-  let max: number
+  let price: number
+  let marketMin: number
+  let marketMax: number
   let confidence: number
   let engine: PriceSuggestionResult["engine"]
 
   const mlResult = await predictPriceViaMlService(input)
   if (mlResult) {
-    ;({ min, max, confidence } = mlResult)
+    ;({ price, min: marketMin, max: marketMax, confidence } = mlResult)
     engine = "ml_service"
   } else {
     const bands = await findPriceReferenceByCategory(input.category)
     const scored = scoreWithRulesEngine(input, bands)
-    min = scored.min
-    max = scored.max
+    price = scored.price
+    marketMin = scored.min
+    marketMax = scored.max
     confidence = scored.confidence
     engine = "rules_engine"
   }
@@ -72,13 +82,12 @@ export async function suggestPrice(input: PriceSuggestionInput): Promise<PriceSu
 
   if (features.gemini && input.descriptionEn) {
     try {
-      const refined = await generateStructured<{ min: number; max: number; rationaleEn: string; rationaleHi: string }>({
+      const refined = await generateStructured<{ price: number; rationaleEn: string; rationaleHi: string }>({
         systemInstruction: SYSTEM_INSTRUCTION,
-        prompt: `Category: ${input.category}\nMaterial: ${input.material ?? "unknown"}\nDescription: ${input.descriptionEn}\nPreliminary range: ₹${min}-₹${max}\nArtisan experience: ${input.experienceYears} years`,
+        prompt: `Category: ${input.category}\nMaterial: ${input.material ?? "unknown"}\nDescription: ${input.descriptionEn}\nMarket range: ₹${marketMin}-₹${marketMax}\nPreliminary estimate: ₹${price}\nMaterial cost (artisan-reported): ${input.materialCost != null ? `₹${input.materialCost}` : "not provided"}\nArtisan experience: ${input.experienceYears} years`,
         schema: REFINEMENT_SCHEMA,
       })
-      min = refined.min
-      max = refined.max
+      price = refined.price
       rationaleEn = refined.rationaleEn
       rationaleHi = refined.rationaleHi
       engine = "gemini"
@@ -90,13 +99,13 @@ export async function suggestPrice(input: PriceSuggestionInput): Promise<PriceSu
   await createPriceSuggestion({
     productId: input.productId,
     engine,
-    suggestedMin: String(min),
-    suggestedMax: String(max),
+    suggestedMin: String(marketMin),
+    suggestedMax: String(marketMax),
     confidence: String(confidence),
     rationaleEn,
     rationaleHi,
-    inputs: input,
+    inputs: { ...input, price },
   })
 
-  return { min, max, confidence, engine, rationaleEn, rationaleHi }
+  return { price, marketMin, marketMax, materialCost: input.materialCost, confidence, engine, rationaleEn, rationaleHi }
 }

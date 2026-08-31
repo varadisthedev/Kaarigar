@@ -135,9 +135,14 @@ export default async function RootPage({
           )}
 
           {businesses.length === 0 ? (
-            // Covers both a total guest and a signed-in user with no
-            // business yet — same CTA works for either audience.
-            <VoiceHero href="/onboard" title={t("heroTitle")} subtitle={t("heroSubtitle")} example={t("heroExample")} />
+            // Unauthenticated visitors are sent to login with a redirect back to onboarding,
+            // while signed-in users without a business go straight to /onboard.
+            <VoiceHero
+              href={session ? "/onboard" : "/login?redirect=/onboard"}
+              title={t("heroTitle")}
+              subtitle={t("heroSubtitle")}
+              example={t("heroExample")}
+            />
           ) : primaryBusiness ? (
             <>
               {/* Voice hero — routes to the proven Add Product flow (mic capture,

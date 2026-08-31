@@ -7,10 +7,15 @@ const SIZE_MULTIPLIER: Record<"small" | "medium" | "large", number> = {
 }
 
 export type RulesEngineResult = {
+  price: number
   min: number
   max: number
   confidence: number
   matchedOn: "category+material+region" | "category+material" | "category" | "none"
+}
+
+function result(min: number, max: number, confidence: number, matchedOn: RulesEngineResult["matchedOn"]): RulesEngineResult {
+  return { min, max, price: Math.round((min + max) / 2), confidence, matchedOn }
 }
 
 /**
@@ -18,7 +23,9 @@ export type RulesEngineResult = {
  * floor of the pricing chain. Scores against the seeded `price_reference`
  * bands, picking the closest match and scaling by size band. Fully
  * explainable: `matchedOn` says exactly which fields the confidence is
- * based on, unlike a model's opaque output.
+ * based on, unlike a model's opaque output. Returns both the market range
+ * (min/max) and a single point estimate (their midpoint) — the UI shows
+ * both.
  */
 export function scoreWithRulesEngine(
   input: {
@@ -35,35 +42,30 @@ export function scoreWithRulesEngine(
     (b) => b.material === input.material && b.region === input.region
   )
   if (exact) {
-    return {
-      min: Math.round(Number(exact.priceMin) * sizeMult),
-      max: Math.round(Number(exact.priceMax) * sizeMult),
-      confidence: 0.65,
-      matchedOn: "category+material+region",
-    }
+    return result(
+      Math.round(Number(exact.priceMin) * sizeMult),
+      Math.round(Number(exact.priceMax) * sizeMult),
+      0.65,
+      "category+material+region"
+    )
   }
 
   const materialMatch = bands.find((b) => b.material === input.material)
   if (materialMatch) {
-    return {
-      min: Math.round(Number(materialMatch.priceMin) * sizeMult),
-      max: Math.round(Number(materialMatch.priceMax) * sizeMult),
-      confidence: 0.5,
-      matchedOn: "category+material",
-    }
+    return result(
+      Math.round(Number(materialMatch.priceMin) * sizeMult),
+      Math.round(Number(materialMatch.priceMax) * sizeMult),
+      0.5,
+      "category+material"
+    )
   }
 
   if (bands.length > 0) {
     const avgMin = bands.reduce((s, b) => s + Number(b.priceMin), 0) / bands.length
     const avgMax = bands.reduce((s, b) => s + Number(b.priceMax), 0) / bands.length
-    return {
-      min: Math.round(avgMin * sizeMult),
-      max: Math.round(avgMax * sizeMult),
-      confidence: 0.35,
-      matchedOn: "category",
-    }
+    return result(Math.round(avgMin * sizeMult), Math.round(avgMax * sizeMult), 0.35, "category")
   }
 
   // No reference data for this category at all — a wide, honest default.
-  return { min: 200, max: 2000, confidence: 0.15, matchedOn: "none" }
+  return result(200, 2000, 0.15, "none")
 }

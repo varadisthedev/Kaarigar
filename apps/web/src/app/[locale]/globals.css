@@ -165,15 +165,18 @@
     @apply font-sans;
     }
   /* Devanagari has taller, denser glyphs than Latin — reusing the Latin sans
-     and its line-height makes Hindi text feel cramped and afterthought-y.
-     Swap both the sans and heading fonts to Noto Sans Devanagari and loosen
-     line-height only for hi, everything else (colors, spacing, radius)
-     inherited unchanged from the shared design system. */
-  html[lang="hi"] {
+     and its line-height makes Hindi/Marathi text feel cramped and
+     afterthought-y. Swap both the sans and heading fonts to Noto Sans
+     Devanagari and loosen line-height for hi and mr (same script), leaving
+     everything else (colors, spacing, radius) inherited unchanged from the
+     shared design system. */
+  html[lang="hi"],
+  html[lang="mr"] {
     --font-sans: var(--font-devanagari);
     --font-heading: var(--font-devanagari);
   }
-  html[lang="hi"] body {
+  html[lang="hi"] body,
+  html[lang="mr"] body {
     line-height: 1.75;
   }
 }

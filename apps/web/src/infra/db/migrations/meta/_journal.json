@@ -43,6 +43,13 @@
       "when": 1788119470298,
       "tag": "0005_amused_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788200383980,
+      "tag": "0006_brave_proteus",
+      "breakpoints": true
     }
   ]
 }

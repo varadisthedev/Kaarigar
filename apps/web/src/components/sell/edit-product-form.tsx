@@ -9,7 +9,7 @@ import { useRouter } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 
 export function EditProductForm({
   productId,
@@ -36,8 +36,7 @@ export function EditProductForm({
   const [description, setDescription] = React.useState(initial.descriptionEn)
   const [materials, setMaterials] = React.useState(initial.materials.join(", "))
   const [dimensions, setDimensions] = React.useState(initial.dimensions)
-  const [priceMin, setPriceMin] = React.useState(initial.priceMin)
-  const [priceMax, setPriceMax] = React.useState(initial.priceMax)
+  const [price, setPrice] = React.useState(initial.priceMin || initial.priceMax)
   const [tags, setTags] = React.useState(initial.tags.join(", "))
   const [pending, setPending] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
@@ -46,6 +45,7 @@ export function EditProductForm({
     e.preventDefault()
     setPending(true)
     setSaved(false)
+    const priceNum = price ? Number(price) : undefined
     try {
       const res = await apiFetch(`/api/products/${productId}`, {
         method: "PATCH",
@@ -55,8 +55,8 @@ export function EditProductForm({
           descriptionEn: description || undefined,
           materials: materials ? materials.split(",").map((m) => m.trim()).filter(Boolean) : [],
           dimensions: dimensions || undefined,
-          priceMin: priceMin ? Number(priceMin) : undefined,
-          priceMax: priceMax ? Number(priceMax) : undefined,
+          priceMin: priceNum,
+          priceMax: priceNum,
           seoKeywords: tags ? tags.split(",").map((tag) => tag.trim()).filter(Boolean) : [],
         }),
       })
@@ -73,7 +73,10 @@ export function EditProductForm({
   return (
     <form onSubmit={submit}>
       <Card>
-        <CardContent className="flex flex-col gap-3 pt-5">
+        <CardHeader>
+          <CardTitle>{t("editProduct")}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="e-title">{tProduct("title")}</Label>
             <Input id="e-title" value={titleEn} onChange={(e) => setTitleEn(e.target.value)} required />
@@ -96,15 +99,10 @@ export function EditProductForm({
             <Label htmlFor="e-dimensions">{tProduct("dimensions")}</Label>
             <Input id="e-dimensions" value={dimensions} onChange={(e) => setDimensions(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="e-min">{t("priceMin")}</Label>
-              <Input id="e-min" inputMode="numeric" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="e-max">{t("priceMax")}</Label>
-              <Input id="e-max" inputMode="numeric" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} />
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="e-price">Price (₹)</Label>
+            <Input id="e-price" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g. 1200" />
+            <p className="text-xs text-muted-foreground">Base product price shown as &quot;{price ? `₹${price}` : "₹—"} onwards&quot; on the marketplace.</p>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="e-tags">{tProduct("tags")}</Label>

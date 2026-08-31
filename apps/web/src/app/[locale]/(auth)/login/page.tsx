@@ -97,7 +97,12 @@ export default function LoginPage() {
         else setError(t("errorInvalidOtp"))
         return
       }
-      router.push(stripLocalePrefix(next, locale))
+      if (data.user && !data.user.profileCompleted) {
+        const dest = stripLocalePrefix(next, locale)
+        router.push(`/account/onboarding${dest && dest !== "/" ? `?redirect=${encodeURIComponent(dest)}` : ""}`)
+      } else {
+        router.push(stripLocalePrefix(next, locale))
+      }
       router.refresh()
     } finally {
       setPending(false)

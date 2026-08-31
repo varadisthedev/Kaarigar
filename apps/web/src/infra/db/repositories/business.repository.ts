@@ -110,7 +110,7 @@ export async function listPendingReviewBusinesses() {
   })
 }
 
-export async function approveBusiness(id: string, businessCode: string, reviewedBy: string) {
+export async function approveBusiness(id: string, businessCode: string, reviewedBy: string | null) {
   const db = getDb()
   const [business] = await db
     .update(businesses)

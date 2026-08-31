@@ -20,7 +20,7 @@ export default async function NewProductPage({
   if (!business || business.ownerId !== user.sub || business.status !== "approved") notFound()
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-lg flex-col justify-center gap-6 px-4 py-12">
+    <div className="mx-auto flex min-h-svh w-full max-w-4xl flex-col justify-center gap-6 px-4 py-8 sm:py-12">
       <NewProductFlow
         businessId={business.id}
         craftCategory={business.craftCategory}

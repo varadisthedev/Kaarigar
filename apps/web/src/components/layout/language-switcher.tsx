@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 const LANGUAGES = [
   { code: "en", label: "English", enabled: true },
   { code: "hi", label: "हिन्दी", enabled: true },
-  { code: "mr", label: "मराठी", enabled: false },
+  { code: "mr", label: "मराठी", enabled: true },
 ] as const
 
 /**
@@ -18,9 +18,7 @@ const LANGUAGES = [
  * `variant="full"` — a labeled section (heading + "changes the whole site"
  * copy + full-height rows) for the nav drawer, so language switching reads
  * as a real site-wide setting rather than a per-page toggle easy to miss.
- * Marathi is shown everywhere the switcher appears (so it's clear the
- * option exists) but marked "Coming soon" and does nothing yet — no mr
- * locale/message catalog exists, on purpose, per explicit instruction.
+ * Three locales are fully supported: English, Hindi, and Marathi.
  */
 export function LanguageSwitcher({ variant = "compact" }: { variant?: "compact" | "full" }) {
   const locale = useLocale()
@@ -30,7 +28,7 @@ export function LanguageSwitcher({ variant = "compact" }: { variant?: "compact" 
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  function switchTo(next: "en" | "hi") {
+  function switchTo(next: "en" | "hi" | "mr") {
     const qs = searchParams.toString()
     router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { locale: next })
   }

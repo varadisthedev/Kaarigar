@@ -75,6 +75,7 @@ class PricePredictRequest(BaseModel):
 
 
 class PricePredictResponse(BaseModel):
+    price: float
     min: float
     max: float
     confidence: float
@@ -118,6 +119,9 @@ def predict_price(req: PricePredictRequest):
     price_max = float(bundle["model_max"].predict(row)[0])
     if price_max < price_min:
         price_min, price_max = price_max, price_min
+    # A single point estimate alongside the market range — the UI shows
+    # both (material cost / market range / suggested price).
+    price = (price_min + price_max) / 2
 
     known = req.category in bundle["known_categories"]
     confidence = 0.8 if known else 0.4
@@ -133,6 +137,7 @@ def predict_price(req: PricePredictRequest):
         top_features = []
 
     return PricePredictResponse(
+        price=round(max(price, 0), 2),
         min=round(max(price_min, 0), 2),
         max=round(max(price_max, 0), 2),
         confidence=confidence,

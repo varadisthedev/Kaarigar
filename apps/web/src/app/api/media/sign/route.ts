@@ -7,7 +7,7 @@ import { isNativeClient } from "@/infra/http/auth-cookies"
 import { requireCsrf } from "@/infra/http/csrf"
 
 const bodySchema = z.object({
-  kind: z.enum(["onboarding_photo", "onboarding_video", "avatar", "product_photo", "product_video"]),
+  kind: z.enum(["onboarding_photo", "onboarding_video", "avatar", "product_photo", "product_video", "chat_photo"]),
   draftId: z.string().min(1).max(64).optional(),
 })
 
@@ -39,9 +39,11 @@ export async function POST(req: NextRequest) {
     folder =
       kind === "avatar"
         ? `Kaarigar/avatars/${user.sub}`
-        : kind === "product_video"
-          ? `Kaarigar/products/${user.sub}/video`
-          : `Kaarigar/products/${user.sub}`
+        : kind === "chat_photo"
+          ? `Kaarigar/chat/${user.sub}`
+          : kind === "product_video"
+            ? `Kaarigar/products/${user.sub}/video`
+            : `Kaarigar/products/${user.sub}`
   }
 
   try {

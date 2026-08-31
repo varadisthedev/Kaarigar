@@ -17,6 +17,18 @@ async function uniqueBusinessCode(state: string | null | undefined): Promise<str
   return `${generateBusinessCode(state)}-${Date.now().toString(36)}`
 }
 
+/** MVP: admin review is bypassed for now — every submission is approved
+ * immediately, straight from `submitBusiness`, no human in the loop. No
+ * review action / audit log entry is written (there's no admin actor to
+ * attribute it to); `reviewedBy` stays null to make that visible in the
+ * data. `approveBusinessSubmission` below is left intact, unused, so
+ * re-enabling human review later is just wiring the admin route back in. */
+export async function autoApproveBusiness(businessId: string, state: string | null | undefined): Promise<string> {
+  const businessCode = await uniqueBusinessCode(state)
+  await approveBusiness(businessId, businessCode, null)
+  return businessCode
+}
+
 export async function approveBusinessSubmission(businessId: string, adminId: string): Promise<ReviewResult> {
   const business = await findBusinessById(businessId)
   if (!business) return { ok: false, error: "not_found" }

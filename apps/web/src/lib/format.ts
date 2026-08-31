@@ -8,10 +8,18 @@ export function formatInr(amount: number | string): string {
   return inrFormatter.format(Number(amount))
 }
 
-export function formatPriceRange(min: number | string | null, max: number | string | null): string {
-  if (min == null && max == null) return "—"
-  if (min != null && max != null) return `${formatInr(min)} – ${formatInr(max)}`
-  return formatInr(min ?? max!)
+export function formatPriceOnwards(price: number | string | null | undefined, locale?: string): string {
+  if (price == null || price === "" || isNaN(Number(price))) return "—"
+  const formatted = formatInr(price)
+  if (locale === "mr") return `${formatted} पासून`
+  if (locale === "hi") return `${formatted} से शुरू`
+  return `${formatted} onwards`
+}
+
+export function formatPriceRange(min: number | string | null, max: number | string | null, locale?: string): string {
+  const base = min ?? max
+  if (base == null || base === "" || isNaN(Number(base))) return "—"
+  return formatPriceOnwards(base, locale)
 }
 
 /** Indian numbering (K/L/Cr) for real platform stats — a "+" suffix is

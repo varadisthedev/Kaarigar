@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import { CheckCircle2 } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
 
 import { defaultCountry } from "@/config/countries"
@@ -41,7 +42,7 @@ type Step =
 export function OnboardingFlow() {
   const t = useTranslations("onboarding")
   const tAuth = useTranslations("auth")
-  const locale = useLocale() as "en" | "hi"
+  const locale = useLocale() as "en" | "hi" | "mr"
 
   const [draftId] = React.useState(() => crypto.randomUUID())
   const [step, setStep] = React.useState<Step>("language")
@@ -70,6 +71,7 @@ export function OnboardingFlow() {
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [devCode, setDevCode] = React.useState<string | null>(null)
+  const [businessCode, setBusinessCode] = React.useState<string | null>(null)
   const resend = useCountdown(60)
 
   const phoneE164 = normalizePhoneInput(dialCode, nationalNumber)
@@ -137,7 +139,7 @@ export function OnboardingFlow() {
         body: JSON.stringify({
           draftId,
           displayName: businessDraft.businessName || "Untitled business",
-          craftCategory: businessDraft.craftCategory || "Other",
+          craftCategory: businessDraft.craftCategory || "Handicrafts",
           descriptionEn: businessDraft.descriptionEn,
           descriptionHi: businessDraft.descriptionHi,
           district: location.district || undefined,
@@ -167,6 +169,8 @@ export function OnboardingFlow() {
         setError(tAuth("errorInvalidPhone")) // generic — submission failures are rare and logged server-side
         return
       }
+      const submitData = await submitRes.json()
+      setBusinessCode(submitData.business?.businessCode ?? null)
       setStep("submitted")
     } finally {
       setPending(false)
@@ -370,12 +374,13 @@ export function OnboardingFlow() {
         height={1199}
         className="pointer-events-none absolute -top-10 -right-10 size-56 object-contain opacity-10"
       />
-      <CardHeader className="relative">
+      <CardHeader className="relative items-center text-center">
+        <CheckCircle2 className="mb-2 size-14 text-green-600" strokeWidth={1.5} />
         <CardTitle>{t("submittedTitle")}</CardTitle>
         <CardDescription>{t("submittedSubtitle")}</CardDescription>
       </CardHeader>
-      <CardContent className="relative flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground">{t("submittedTrackHint")}</p>
+      <CardContent className="relative flex flex-col items-center gap-1 text-center">
+        {businessCode && <p className="text-sm font-medium text-foreground">{t("submittedTrackHint", { businessCode })}</p>}
         {productPhotos.length > 0 && <p className="text-sm text-muted-foreground">{t("submittedProductHint")}</p>}
       </CardContent>
     </Card>

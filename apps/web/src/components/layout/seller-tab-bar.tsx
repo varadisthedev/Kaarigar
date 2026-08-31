@@ -1,19 +1,19 @@
 "use client"
 
-import { Home, Package, Plus, MessageCircle, ShoppingBag, TrendingUp } from "lucide-react"
+import { Home, Package, Plus, MessageCircle, ShoppingBag, Store, TrendingUp } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { Link, usePathname } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 
-/** The app-wide bottom bar — Home/Products/Chats/Analytics/Orders, with a
- * plus button (not a mic) as the center action. Voice capture still lives
- * inside the Add Product flow itself; this button is just the entry point
- * into it, not a replacement for it. Renders on `/` (the main entry point)
- * and every `/sell/*` page — protected links (Products/Orders/the + button)
- * just redirect to login for a guest, same as any other gated route. Six
- * items now that Analytics joined Orders — icons/labels run slightly
- * tighter than a 5-item bar to fit. */
+/** The app-wide bottom bar — Home/Products/Marketplace/Chats/Analytics/Orders,
+ * with a plus button (not a mic) as the center action. Voice capture still
+ * lives inside the Add Product flow itself; this button is just the entry
+ * point into it, not a replacement for it. Renders on `/` (the main entry
+ * point) and every `/sell/*` page — protected links (Products/Orders/the +
+ * button) just redirect to login for a guest, same as any other gated
+ * route. Seven items now that Marketplace joined the bar — icons/labels
+ * run slightly tighter than a 5-item bar to fit. */
 export function SellerTabBar() {
   const t = useTranslations("nav")
   const pathname = usePathname()
@@ -39,6 +39,16 @@ export function SellerTabBar() {
       >
         <Package className="size-5" />
         {t("myCatalog")}
+      </Link>
+      <Link
+        href="/marketplace"
+        className={cn(
+          "flex flex-1 flex-col items-center gap-0.5 py-3 text-[10px]",
+          pathname.startsWith("/marketplace") ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        <Store className="size-5" />
+        {t("marketplace")}
       </Link>
 
       <Link

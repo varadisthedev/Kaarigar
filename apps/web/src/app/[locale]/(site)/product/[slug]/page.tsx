@@ -93,7 +93,13 @@ export default async function ProductPage({
             )}
           </dl>
 
-          <InquiryPanel businessId={product.businessId} productId={product.id} currentUserId={user?.sub ?? null} />
+          <InquiryPanel
+            businessId={product.businessId}
+            businessName={product.business.displayName}
+            businessAvatarUrl={product.business.logoUrl}
+            productId={product.id}
+            currentUserId={user?.sub ?? null}
+          />
         </div>
       </div>
     </div>

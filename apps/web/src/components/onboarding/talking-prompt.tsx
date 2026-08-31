@@ -16,7 +16,7 @@ export function TalkingPrompt({
   className,
 }: {
   promptKey: PromptKey
-  locale: "en" | "hi"
+  locale: "en" | "hi" | "mr"
   text: string
   className?: string
 }) {
@@ -43,7 +43,7 @@ export function TalkingPrompt({
 
       if (!cancelled && "speechSynthesis" in window) {
         const utterance = new SpeechSynthesisUtterance(text)
-        utterance.lang = locale === "hi" ? "hi-IN" : "en-IN"
+        utterance.lang = locale === "hi" ? "hi-IN" : locale === "mr" ? "mr-IN" : "en-IN"
         window.speechSynthesis.speak(utterance)
       }
     }

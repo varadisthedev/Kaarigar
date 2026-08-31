@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 
 import { listMarketplaceBusinesses } from "@/infra/db/repositories/business.repository"
@@ -37,29 +38,48 @@ export default async function MarketplacePage({
   const businesses = hasProductFilter ? allBusinesses.filter((b) => b.products.length > 0) : allBusinesses
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
-      <div>
-        <h1 className="font-heading text-2xl font-medium text-foreground">{t("title")}</h1>
-        <p className="mt-1 text-muted-foreground">{t("subtitle")}</p>
-      </div>
-
-      <MarketplaceFilters
-        category={filters.category}
-        state={filters.state}
-        search={filters.search}
-        price={filters.price}
-        moq={filters.moq}
+    <div className="relative overflow-hidden">
+      <Image
+        src="/flower.png"
+        alt=""
+        aria-hidden
+        width={1312}
+        height={1199}
+        className="pointer-events-none absolute -top-16 -right-16 z-0 size-72 object-contain opacity-10"
+      />
+      <Image
+        src="/bottomleft.png"
+        alt=""
+        aria-hidden
+        width={1672}
+        height={954}
+        className="pointer-events-none absolute -bottom-10 -left-10 z-0 w-72 opacity-10"
       />
 
-      {businesses.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">{t("noResults")}</p>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {businesses.map((business) => (
-            <BusinessCard key={business.id} business={business} />
-          ))}
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
+        <div>
+          <h1 className="font-heading text-2xl font-medium text-foreground">{t("title")}</h1>
+          <p className="mt-1 text-muted-foreground">{t("subtitle")}</p>
         </div>
-      )}
+
+        <MarketplaceFilters
+          category={filters.category}
+          state={filters.state}
+          search={filters.search}
+          price={filters.price}
+          moq={filters.moq}
+        />
+
+        {businesses.length === 0 ? (
+          <p className="py-12 text-center text-muted-foreground">{t("noResults")}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {businesses.map((business) => (
+              <BusinessCard key={business.id} business={business} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

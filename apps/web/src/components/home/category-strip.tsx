@@ -1,7 +1,7 @@
 import { Amphora, Shirt, Hammer, Gem, TreePine, Palette, LayoutGrid } from "lucide-react"
 
 import { Link } from "@/i18n/navigation"
-import { craftCategories } from "@/config/craft-categories"
+import { craftCategories, getCategoryLabel } from "@/config/craft-categories"
 import { HorizontalScroller } from "@/components/home/horizontal-scroller"
 
 /** A curated subset of `craftCategories` — the same reference list the
@@ -46,7 +46,7 @@ export function CategoryStrip({
       <HorizontalScroller>
         {chips.map((category) => {
           const Icon = CATEGORY_ICONS[category.id as (typeof FEATURED_CATEGORY_IDS)[number]]
-          const label = locale === "hi" ? category.labelHi : category.labelEn
+          const label = getCategoryLabel(category, locale)
           return (
             <Link
               key={category.id}

@@ -4,7 +4,7 @@ import { mediaAssets, type MediaAssetKey } from "@/config/media"
 
 type MediaProps = Omit<ImageProps, "src" | "alt"> & {
   assetKey: MediaAssetKey
-  locale: "en" | "hi"
+  locale: "en" | "hi" | "mr"
 }
 
 /** Reads from the static asset registry (`config/media.ts`) instead of a

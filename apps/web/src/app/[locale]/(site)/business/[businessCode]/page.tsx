@@ -65,7 +65,7 @@ export default async function BusinessProfilePage({
                 businessId={business.id}
                 currentUserId={session?.sub ?? null}
                 approxLocation={approxLocation}
-                locale={locale as "en" | "hi"}
+                locale={locale as "en" | "hi" | "mr"}
               />
             ))}
         </div>

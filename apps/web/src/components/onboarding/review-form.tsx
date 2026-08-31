@@ -4,7 +4,7 @@ import * as React from "react"
 import { Pencil } from "lucide-react"
 import { useTranslations } from "next-intl"
 
-import { craftCategories } from "@/config/craft-categories"
+import { craftCategories, getCategoryLabel } from "@/config/craft-categories"
 import { INDIAN_STATES } from "@/core/business/business-code"
 import type { BusinessDraft } from "@/core/business/draft"
 import { Input } from "@/components/ui/input"
@@ -59,7 +59,7 @@ export function ReviewForm({
 }: {
   values: ReviewFormValues
   onChange: (values: ReviewFormValues) => void
-  locale: "en" | "hi"
+  locale: "en" | "hi" | "mr"
 }) {
   const t = useTranslations("onboarding")
   const [editing, setEditing] = React.useState<Set<keyof ReviewFormValues>>(new Set())
@@ -90,17 +90,19 @@ export function ReviewForm({
 
       <ReviewRow
         label={t("fieldCraftCategory")}
-        value={
-          craftCategories.find((c) => c.labelEn === values.craftCategory)?.[locale === "hi" ? "labelHi" : "labelEn"] ??
-          values.craftCategory
-        }
+        value={getCategoryLabel(values.craftCategory, locale) || values.craftCategory}
         editing={editing.has("craftCategory")}
         onToggleEdit={() => toggle("craftCategory")}
       >
         <Select
           value={values.craftCategory}
           onValueChange={(v) => set("craftCategory", v as string)}
-          items={craftCategories.map((c) => ({ value: c.labelEn, label: c.labelEn }))}
+          items={[
+            ...craftCategories.map((c) => ({ value: c.labelEn, label: getCategoryLabel(c, locale) })),
+            ...(values.craftCategory && !craftCategories.some((c) => c.labelEn.toLowerCase() === values.craftCategory.toLowerCase())
+              ? [{ value: values.craftCategory, label: values.craftCategory }]
+              : []),
+          ]}
         >
           <SelectTrigger>
             <SelectValue placeholder={t("fieldCraftCategory")} />
@@ -108,9 +110,14 @@ export function ReviewForm({
           <SelectContent>
             {craftCategories.map((c) => (
               <SelectItem key={c.id} value={c.labelEn}>
-                {locale === "hi" ? c.labelHi : c.labelEn}
+                {getCategoryLabel(c, locale)}
               </SelectItem>
             ))}
+            {values.craftCategory && !craftCategories.some((c) => c.labelEn.toLowerCase() === values.craftCategory.toLowerCase()) && (
+              <SelectItem value={values.craftCategory}>
+                {values.craftCategory}
+              </SelectItem>
+            )}
           </SelectContent>
         </Select>
       </ReviewRow>
@@ -190,7 +197,7 @@ export function ReviewForm({
   )
 }
 
-export function draftToFormValues(draft: Partial<BusinessDraft>, locale: "en" | "hi"): ReviewFormValues {
+export function draftToFormValues(draft: Partial<BusinessDraft>, locale: "en" | "hi" | "mr"): ReviewFormValues {
   return {
     businessName: draft.businessName ?? "",
     craftCategory: draft.craftCategory ?? "",

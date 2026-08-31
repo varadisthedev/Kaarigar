@@ -6,6 +6,7 @@ import { createBusiness, addBusinessMedia } from "@/infra/db/repositories/busine
 import { createProductListing } from "./catalog.service"
 import { extractBusinessDraft, extractProductDraft } from "./extraction.service"
 import { generateBusinessCode } from "./business-code"
+import { autoApproveBusiness } from "./review.service"
 import type { BusinessDraft, ProductDraft } from "./draft"
 
 type OnboardingPurpose = "business_onboarding" | "product_catalog"
@@ -112,11 +113,14 @@ export type SubmitBusinessInput = {
 }
 
 /** The artisan has reviewed the draft, uploaded photos, and just verified
- * their phone — this is the actual submission, landing in `pending_review`
- * for the admin queue. When a first product was also captured during
- * onboarding, it's created right alongside as a `draft`-status product —
- * `approveBusiness` already bulk-publishes any draft products on approval,
- * so it rides along on the same human-review gate for free. */
+ * their phone — this is the actual submission. When a first product was
+ * also captured during onboarding, it's created right alongside as a
+ * `draft`-status product.
+ *
+ * MVP: admin review is bypassed for now (see review.service.ts), so the
+ * business is auto-approved immediately after creation — `approveBusiness`
+ * bulk-publishes any draft products at the same time, so the product goes
+ * live in the same step. */
 export async function submitBusiness(input: SubmitBusinessInput) {
   const business = await createBusiness({
     ownerId: input.ownerId,
@@ -178,7 +182,9 @@ export async function submitBusiness(input: SubmitBusinessInput) {
 
   await attachVoiceSessionsToBusiness(input.draftId, input.ownerId, business.id)
 
-  return business
+  const businessCode = await autoApproveBusiness(business.id, business.state)
+
+  return { ...business, status: "approved" as const, businessCode }
 }
 
 // Re-exported so the admin approval flow (Phase 9) uses the same generator.

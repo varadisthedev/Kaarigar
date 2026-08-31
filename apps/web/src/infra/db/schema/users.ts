@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, uuid, varchar, numeric, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 
 import { userRoleEnum, userStatusEnum } from "./enums"
 
@@ -26,18 +26,31 @@ export const users = pgTable(
     phoneE164: varchar("phone_e164", { length: 20 }),
     countryCode: varchar("country_code", { length: 6 }),
     name: varchar("name", { length: 120 }),
+    username: varchar("username", { length: 60 }),
+    gender: varchar("gender", { length: 20 }),
     email: varchar("email", { length: 255 }),
     avatarUrl: varchar("avatar_url", { length: 2048 }),
     avatarPublicId: varchar("avatar_public_id", { length: 255 }),
     locale: varchar("locale", { length: 5 }).notNull().default("en"),
     role: userRoleEnum("role").notNull().default("artisan"),
     status: userStatusEnum("status").notNull().default("active"),
+    // Lightweight profile — every account fills this in once, regardless of
+    // whether they end up buying, selling, or both (this app doesn't
+    // segregate users by role for that). Separate from the artisan-only
+    // business/product creation flow at /onboard.
+    state: varchar("state", { length: 80 }),
+    district: varchar("district", { length: 80 }),
+    latitude: numeric("latitude", { precision: 9, scale: 6 }),
+    longitude: numeric("longitude", { precision: 9, scale: 6 }),
+    shoppingInterest: varchar("shopping_interest", { length: 500 }),
+    profileCompletedAt: timestamp("profile_completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex("users_phone_e164_idx").on(table.phoneE164),
     uniqueIndex("users_email_idx").on(table.email),
+    uniqueIndex("users_username_idx").on(table.username),
   ]
 )
 

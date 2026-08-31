@@ -1,7 +1,7 @@
 import "server-only"
 import { env, features } from "@/config/env"
 
-export type MlPricePrediction = { min: number; max: number; confidence: number; topFeatures: string[] }
+export type MlPricePrediction = { price: number; min: number; max: number; confidence: number; topFeatures: string[] }
 
 /** Returns null (never throws) when the ML service is unconfigured,
  * unreachable, or slow — `pricing.service.ts` treats that as "fall through
@@ -39,7 +39,7 @@ export async function predictPriceViaMlService(input: {
     if (!res.ok) return null
 
     const data = await res.json()
-    return { min: data.min, max: data.max, confidence: data.confidence, topFeatures: data.top_features ?? [] }
+    return { price: data.price, min: data.min, max: data.max, confidence: data.confidence, topFeatures: data.top_features ?? [] }
   } catch (err) {
     console.error("[ml-service] price prediction failed, falling back:", err)
     return null

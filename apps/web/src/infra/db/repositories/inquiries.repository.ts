@@ -1,8 +1,18 @@
 import "server-only"
-import { desc, eq, or } from "drizzle-orm"
+import { and, desc, eq, or } from "drizzle-orm"
 
 import { getDb } from "../client"
 import { inquiries, businesses, type NewInquiry } from "../schema"
+
+export async function findExistingInquiry(buyerId: string, businessId: string, productId?: string | null) {
+  const db = getDb()
+  const conditions = [eq(inquiries.buyerId, buyerId), eq(inquiries.businessId, businessId)]
+  if (productId) conditions.push(eq(inquiries.productId, productId))
+
+  return db.query.inquiries.findFirst({
+    where: and(...conditions),
+  })
+}
 
 export async function createInquiry(input: NewInquiry) {
   const db = getDb()

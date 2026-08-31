@@ -5,7 +5,7 @@ import type { QnaField } from "@/components/onboarding/voice-qna"
  * spoken question, in the order they're asked. `description`/`title` read
  * and write whichever of the En/Hi pair matches the active locale, since the
  * extractor fills both from a single utterance but the UI only shows one. */
-export function businessQnaFields(locale: "en" | "hi"): QnaField<BusinessDraft>[] {
+export function businessQnaFields(locale: "en" | "hi" | "mr"): QnaField<BusinessDraft>[] {
   return [
     {
       id: "businessName",
@@ -50,7 +50,7 @@ export function businessQnaFields(locale: "en" | "hi"): QnaField<BusinessDraft>[
   ]
 }
 
-export function productQnaFields(locale: "en" | "hi"): QnaField<ProductDraft>[] {
+export function productQnaFields(locale: "en" | "hi" | "mr"): QnaField<ProductDraft>[] {
   return [
     {
       id: "title",
@@ -67,19 +67,6 @@ export function productQnaFields(locale: "en" | "hi"): QnaField<ProductDraft>[] 
       required: true,
       getValue: (d) => (locale === "hi" ? d.descriptionHi : d.descriptionEn),
       setValue: (d, v) => (locale === "hi" ? { ...d, descriptionHi: v } : { ...d, descriptionEn: v }),
-    },
-    {
-      id: "materials",
-      promptKey: "promptProductMaterials",
-      label: "fieldProductMaterials",
-      required: false,
-      getValue: (d) => d.materials?.join(", "),
-      setValue: (d, v) => ({
-        ...d,
-        materials: v
-          ? v.split(",").map((m) => m.trim()).filter(Boolean)
-          : undefined,
-      }),
     },
   ]
 }

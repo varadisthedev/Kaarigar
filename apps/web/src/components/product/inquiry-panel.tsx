@@ -13,10 +13,14 @@ import { ChatThread } from "@/components/messaging/chat-thread"
 
 export function InquiryPanel({
   businessId,
+  businessName,
+  businessAvatarUrl,
   productId,
   currentUserId,
 }: {
   businessId: string
+  businessName: string
+  businessAvatarUrl?: string | null
   productId: string
   currentUserId: string | null
 }) {
@@ -50,7 +54,13 @@ export function InquiryPanel({
           </Link>
         </CardHeader>
         <CardContent>
-          <ChatThread inquiryId={inquiryId} currentUserId={currentUserId} />
+          <ChatThread
+            inquiryId={inquiryId}
+            currentUserId={currentUserId}
+            otherPartyName={businessName}
+            otherPartyAvatarUrl={businessAvatarUrl}
+            canQuickAct={false}
+          />
         </CardContent>
       </Card>
     )

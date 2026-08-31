@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { Sparkles } from "lucide-react"
 
 import { apiFetch } from "@/lib/api-fetch"
-import { craftCategories } from "@/config/craft-categories"
+import { craftCategories, getCategoryLabel } from "@/config/craft-categories"
 import { formatInr } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,7 @@ type Result = { min: number; max: number; confidence: number; rationaleEn: strin
 
 export function PriceCheckForm() {
   const t = useTranslations("product")
-  const locale = useLocale() as "en" | "hi"
+  const locale = useLocale() as "en" | "hi" | "mr"
   const [category, setCategory] = React.useState("")
   const [material, setMaterial] = React.useState("")
   const [description, setDescription] = React.useState("")
@@ -52,7 +52,7 @@ export function PriceCheckForm() {
           <SelectContent>
             {craftCategories.map((c) => (
               <SelectItem key={c.id} value={c.labelEn}>
-                {locale === "hi" ? c.labelHi : c.labelEn}
+                {getCategoryLabel(c, locale)}
               </SelectItem>
             ))}
           </SelectContent>

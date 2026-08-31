@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { z } from "zod"
 
-import { createInquiry, listInquiriesForUser } from "@/infra/db/repositories/inquiries.repository"
+import { createInquiry, findExistingInquiry, listInquiriesForUser } from "@/infra/db/repositories/inquiries.repository"
 import { createMessage } from "@/infra/db/repositories/messages.repository"
 import { getCurrentUser } from "@/infra/http/current-user"
 import { requireCsrf } from "@/infra/http/csrf"
@@ -34,17 +34,21 @@ export async function POST(req: NextRequest) {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 })
 
-  const inquiry = await createInquiry({
-    businessId: parsed.data.businessId,
-    productId: parsed.data.productId,
-    buyerId: user.sub,
-    quantity: parsed.data.quantity != null ? String(parsed.data.quantity) : undefined,
-    targetPrice: parsed.data.targetPrice != null ? String(parsed.data.targetPrice) : undefined,
-    message: parsed.data.message,
-  })
+  // Check if an existing inquiry already exists to prevent duplicate chats
+  const existing = await findExistingInquiry(user.sub, parsed.data.businessId, parsed.data.productId)
 
-  // The initial pitch also opens the chat thread, so a seller sees it in
-  // context rather than as a disconnected field.
+  const inquiry =
+    existing ??
+    (await createInquiry({
+      businessId: parsed.data.businessId,
+      productId: parsed.data.productId,
+      buyerId: user.sub,
+      quantity: parsed.data.quantity != null ? String(parsed.data.quantity) : undefined,
+      targetPrice: parsed.data.targetPrice != null ? String(parsed.data.targetPrice) : undefined,
+      message: parsed.data.message,
+    }))
+
+  // The initial pitch also opens or continues the chat thread
   await createMessage({ inquiryId: inquiry.id, senderId: user.sub, body: parsed.data.message })
 
   return NextResponse.json({ ok: true, inquiry })

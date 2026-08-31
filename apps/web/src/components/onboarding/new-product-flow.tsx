@@ -23,7 +23,7 @@ export function NewProductFlow({
   state?: string
 }) {
   const t = useTranslations("sell")
-  const locale = useLocale() as "en" | "hi"
+  const locale = useLocale() as "en" | "hi" | "mr"
   const router = useRouter()
 
   const [draftId] = React.useState(() => crypto.randomUUID())

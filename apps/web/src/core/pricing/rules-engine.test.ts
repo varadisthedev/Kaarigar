@@ -27,6 +27,7 @@ describe("scoreWithRulesEngine", () => {
     expect(result.confidence).toBeGreaterThan(0.5)
     expect(result.min).toBe(250)
     expect(result.max).toBe(450)
+    expect(result.price).toBe(350) // midpoint of 250-450
   })
 
   it("scales the range by size band", () => {

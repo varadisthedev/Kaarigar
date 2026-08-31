@@ -4,21 +4,16 @@ import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
 
-import { craftCategories } from "@/config/craft-categories"
+import { craftCategories, getCategoryLabel } from "@/config/craft-categories"
 import type { BusinessDraft, ProductDraft } from "@/core/business/draft"
 import type { ReadyPhoto } from "@/components/media/photo-upload"
 import type { ReadyVideo } from "@/components/media/video-capture"
 import type { LocationResult } from "./location-step"
+import { formatPriceOnwards } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-function SectionDivider() {
-  return (
-    <div className="my-5 h-3 w-full overflow-hidden opacity-60">
-      <Image src="/horizontal_line.png" alt="" width={2172} height={724} className="h-full w-full object-cover" />
-    </div>
-  )
-}
+
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="font-heading text-sm font-semibold text-foreground">{children}</h3>
@@ -50,7 +45,7 @@ export function ReviewStep({
   error,
   onSubmit,
 }: {
-  locale: "en" | "hi"
+  locale: "en" | "hi" | "mr"
   businessDraft: Partial<BusinessDraft>
   location: LocationResult
   businessPhotos: ReadyPhoto[]
@@ -65,9 +60,7 @@ export function ReviewStep({
   const t = useTranslations("onboarding")
   const hasProduct = productPhotos.length > 0
 
-  const categoryLabel =
-    craftCategories.find((c) => c.labelEn === businessDraft.craftCategory)?.[locale === "hi" ? "labelHi" : "labelEn"] ??
-    businessDraft.craftCategory
+  const categoryLabel = getCategoryLabel(businessDraft.craftCategory, locale) || businessDraft.craftCategory
 
   const description = locale === "hi" ? businessDraft.descriptionHi : businessDraft.descriptionEn
   const productTitle = locale === "hi" ? productDraft.titleHi : productDraft.titleEn
@@ -90,7 +83,7 @@ export function ReviewStep({
         <h2 className="font-heading text-lg font-medium text-foreground">{t("qnaSummaryTitle")}</h2>
       </div>
 
-      <SectionDivider />
+
 
       <SectionTitle>{t("reviewBusinessTitle")}</SectionTitle>
       <div className="mt-2 flex flex-col gap-1.5 text-sm">
@@ -105,7 +98,7 @@ export function ReviewStep({
 
       {businessPhotos.length > 0 && (
         <>
-          <SectionDivider />
+
           <SectionTitle>{t("reviewPhotosTitle")}</SectionTitle>
           <div className="mt-2">
             <PhotoGrid photos={businessPhotos} />
@@ -115,7 +108,7 @@ export function ReviewStep({
 
       {video && (
         <>
-          <SectionDivider />
+
           <SectionTitle>{t("reviewVideoTitle")}</SectionTitle>
           <div className="mt-2">
             <video src={video.url} controls className="aspect-video w-full max-w-xs rounded-lg border border-border" />
@@ -125,7 +118,7 @@ export function ReviewStep({
 
       {hasProduct && (
         <>
-          <SectionDivider />
+
           <SectionTitle>{t("reviewProductTitle")}</SectionTitle>
           <div className="mt-2 flex flex-col gap-1.5 text-sm">
             <Row label={t("fieldProductTitle")} value={productTitle} />
@@ -135,7 +128,7 @@ export function ReviewStep({
               label={t("fieldProductPrice")}
               value={
                 productPrice.priceMin || productPrice.priceMax
-                  ? `₹${productPrice.priceMin ?? "?"} – ₹${productPrice.priceMax ?? "?"}`
+                  ? formatPriceOnwards(productPrice.priceMin ?? productPrice.priceMax, locale)
                   : undefined
               }
             />
@@ -146,7 +139,7 @@ export function ReviewStep({
         </>
       )}
 
-      <SectionDivider />
+
 
       {error && (
         <Alert variant="destructive" className="mb-3">
