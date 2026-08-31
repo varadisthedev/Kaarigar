@@ -14,6 +14,8 @@ Run: python train.py
 Output: models/pricing_model.joblib
 """
 
+import os
+
 import numpy as np
 import pandas as pd
 from joblib import dump
@@ -114,6 +116,7 @@ def main():
     model_min = build_pipeline().fit(X, df["price_min"])
     model_max = build_pipeline().fit(X, df["price_max"])
 
+    os.makedirs("models", exist_ok=True)
     dump(
         {
             "model_min": model_min,
