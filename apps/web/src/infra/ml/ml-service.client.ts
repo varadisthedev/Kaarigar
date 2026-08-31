@@ -22,7 +22,10 @@ export async function predictPriceViaMlService(input: {
   try {
     const res = await fetch(`${env.ML_SERVICE_URL}/price/predict`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(env.ML_SERVICE_API_KEY ? { "x-internal-api-key": env.ML_SERVICE_API_KEY } : {}),
+      },
       signal: controller.signal,
       body: JSON.stringify({
         category: input.category,

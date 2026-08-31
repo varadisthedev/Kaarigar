@@ -2,7 +2,7 @@ import "server-only"
 import { and, eq, gte, inArray, sql } from "drizzle-orm"
 
 import { getDb } from "../client"
-import { businesses, products, productViewsDaily, orders } from "../schema"
+import { businesses, products, productViewsDaily, orders, payments } from "../schema"
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
@@ -86,7 +86,14 @@ export type MonthlyPaymentSummary = {
 
 /** This calendar month's Razorpay-backed order economics for the seller —
  * `payments`/`orders` are already populated locally via the webhook, so no
- * live Razorpay API call is needed for reporting. */
+ * live Razorpay API call is needed for reporting.
+ *
+ * Scoped by when the payment was actually *captured* (not when the order
+ * was created) — an order opened in one month whose advance clears in the
+ * next should count toward the month the money actually landed. Each
+ * qualifying order then also contributes its outstanding balance to
+ * `remainingOrderValue`, so the pie always reflects "money in vs. money
+ * still owed" for this month's paid deals. */
 export async function getMonthlyPaymentSummaryForSeller(sellerId: string): Promise<MonthlyPaymentSummary> {
   const ownedIds = await ownedBusinessIds(sellerId)
   if (ownedIds.length === 0) return { advanceReceived: 0, remainingOrderValue: 0 }
@@ -96,20 +103,33 @@ export async function getMonthlyPaymentSummaryForSeller(sellerId: string): Promi
   monthStart.setDate(1)
   monthStart.setHours(0, 0, 0, 0)
 
-  const monthOrders = await db.query.orders.findMany({
-    where: and(inArray(orders.businessId, ownedIds), gte(orders.createdAt, monthStart)),
+  const paidThisMonth = await db
+    .select({ orderId: payments.orderId, amount: payments.amount })
+    .from(payments)
+    .innerJoin(orders, eq(orders.id, payments.orderId))
+    .where(
+      and(
+        inArray(orders.businessId, ownedIds),
+        eq(payments.status, "paid"),
+        gte(payments.updatedAt, monthStart)
+      )
+    )
+
+  if (paidThisMonth.length === 0) return { advanceReceived: 0, remainingOrderValue: 0 }
+
+  const advanceReceived = paidThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
+
+  const orderIds = [...new Set(paidThisMonth.map((p) => p.orderId))]
+  const relatedOrders = await db.query.orders.findMany({
+    where: inArray(orders.id, orderIds),
     with: { payments: true },
   })
 
-  let advanceReceived = 0
   let remainingOrderValue = 0
-  for (const order of monthOrders) {
+  for (const order of relatedOrders) {
     if (order.status === "cancelled") continue
-    const paidAmount = order.payments
-      .filter((p) => p.status === "paid")
-      .reduce((sum, p) => sum + Number(p.amount), 0)
-    advanceReceived += paidAmount
-    remainingOrderValue += Math.max(0, Number(order.totalAmount) - paidAmount)
+    const totalPaid = order.payments.filter((p) => p.status === "paid").reduce((sum, p) => sum + Number(p.amount), 0)
+    remainingOrderValue += Math.max(0, Number(order.totalAmount) - totalPaid)
   }
 
   return { advanceReceived, remainingOrderValue }

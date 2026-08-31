@@ -4,6 +4,20 @@ An AI-driven market-linkage and smart-cataloging platform for marginalized India
 
 This is the **web MVP** of a mobile-first product. The final target is React Native + Expo; see [Architecture](#architecture) for how the codebase is shaped to make that port straightforward later.
 
+## Repo layout
+
+Two independently deployable apps, each in its own top-level folder so
+Vercel/Render can point at the right one as its project root:
+
+```
+apps/web/     Next.js app -> Vercel
+apps/render/  Python/FastAPI ML service -> Render (or similar)
+```
+
+The rest of this file covers the Next.js app (`apps/web/`); see
+`apps/render/README.md` for the ML service. Commands below assume you're in
+`apps/web/` unless noted.
+
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack) + **TypeScript**, deployed on Vercel
@@ -11,7 +25,7 @@ This is the **web MVP** of a mobile-first product. The final target is React Nat
 - **next-intl** for English/Hindi, both locale-prefixed (`/en/…`, `/hi/…`) for per-language SEO
 - **Tailwind v4** + a hand-adapted shadcn preset (Base UI primitives, not Radix) — see [Design system](#design-system)
 - **Phone/OTP** (MSG91 or a console fallback) as the primary login, plus optional **Google/GitHub OAuth** — both land in the same custom JWT session system, with refresh-token rotation and reuse detection
-- **Sarvam AI** → a companion **Python/FastAPI ML service** (`services/ml/`) → the browser's **Web Speech API**, as a 3-tier speech-to-text fallback chain
+- **Sarvam AI** → a companion **Python/FastAPI ML service** (`apps/render/`) → the browser's **Web Speech API**, as a 3-tier speech-to-text fallback chain
 - **Gemini** for structured extraction (voice → listing) and pricing rationale, with deterministic offline fallbacks for both
 - **Cloudinary** for storage/enhancement + client-side WASM background removal (`@imgly/background-removal`)
 - **Razorpay** for advance payments
@@ -21,6 +35,7 @@ Every one of those integrations is optional at the environment-variable level �
 ## Getting started
 
 ```bash
+cd apps/web
 npm install
 cp .env.example .env.local        # fill in DATABASE_URL at minimum
 npm run db:generate                # only needed after changing the schema
@@ -42,21 +57,21 @@ Log in (via the normal OTP flow) with a phone number listed in `ADMIN_PHONE_NUMB
 Optional — the Next.js app works without it (falls back to the deterministic pricing rules engine and skips straight to Web Speech for voice). To run it:
 
 ```bash
-cd services/ml
+cd apps/render
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python train.py
 uvicorn app.main:app --reload --port 8000
 ```
 
-Then set `ML_SERVICE_URL=http://localhost:8000` in `.env.local`. See `services/ml/README.md` for enabling the (heavier) ASR fallback tier and for deployment notes — it needs a persistent host (Render, a Hugging Face Space, etc.), not Vercel.
+Then set `ML_SERVICE_URL=http://localhost:8000` in `apps/web/.env.local`. See `apps/render/README.md` for enabling the (heavier) ASR fallback tier, the shared `ML_SERVICE_API_KEY` between the two apps, and deployment notes — it needs a persistent host (Render, a Hugging Face Space, etc.), not Vercel.
 
 ## Architecture
 
 Business logic is deliberately kept out of React components and route handlers, both so it stays testable and so the eventual React Native port doesn't require rewriting it:
 
 ```
-src/
+apps/web/src/
   app/          Thin. Pages render components; API routes parse -> call core -> serialize.
   core/         Framework-agnostic domain logic (auth, business, pricing, messaging, payments…).
                 No React, no next/*, no Drizzle imports. This is what ports to Expo largely as-is.
@@ -64,7 +79,7 @@ src/
                 (db/, sms/, speech/, ai/, storage/, payments/, ml/, http/, ratelimit/).
   components/   ui/ (design-system primitives) + feature components.
   i18n/, config/, hooks/, lib/
-services/ml/    Separate Python/FastAPI service — pricing model + optional ASR fallback.
+apps/render/    Separate Python/FastAPI service — pricing model + optional ASR fallback.
 ```
 
 Every swappable external dependency (OTP delivery, speech-to-text, messaging transport) sits behind an interface in `core/*/ports.ts`, implemented in `infra/`. The database itself isn't treated as swappable — `core` services call plain repository functions in `infra/db/repositories/*` directly, which is what "no Drizzle in core" means in practice here.
@@ -86,6 +101,7 @@ Per the SIH scope, Aadhaar verification is an **optional future module**, not pa
 ## Testing
 
 ```bash
+cd apps/web
 npm run test        # vitest — pure domain logic: OTP policy, JWT, business-code
                      # generation, the pricing rules engine, webhook signature
                      # verification. No DB/network required.
@@ -95,6 +111,6 @@ npm run build
 
 ## Deploying
 
-- **Next.js app** → Vercel, as-is.
-- **ML service** → Render/Fly/a Docker-capable host (see `services/ml/README.md`) — it's a persistent process and can't run on Vercel.
-- Fill in the real values for every blank key in `.env.example` on whichever platform you deploy to.
+- **Next.js app** → Vercel, with the project's root directory set to `apps/web`.
+- **ML service** → Render/Fly/a Docker-capable host (see `apps/render/README.md`), with its root directory set to `apps/render` — it's a persistent process and can't run on Vercel.
+- Fill in the real values for every blank key in `apps/web/.env.example` and `apps/render/.env.example` on whichever platform you deploy each to — including a matching `ML_SERVICE_API_KEY` on both sides, the shared secret the two apps use to authenticate to each other.

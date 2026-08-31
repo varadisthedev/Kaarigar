@@ -18,13 +18,23 @@ import os
 from functools import lru_cache
 from typing import Optional
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="Kaarigar ML Service", version="1.0.0")
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "pricing_model.joblib")
 ASR_MODEL_ID = os.environ.get("ASR_MODEL_ID")  # e.g. an AI4Bharat IndicWav2Vec/IndicConformer checkpoint
+
+# Shared secret with the Next.js app (apps/web/src/infra/ml/ml-service.client.ts).
+# Left unset in local dev to keep curl/Swagger testing frictionless; require it
+# once this is actually deployed and reachable from the internet.
+INTERNAL_API_KEY = os.environ.get("ML_SERVICE_API_KEY")
+
+
+def require_internal_api_key(x_internal_api_key: Optional[str] = Header(default=None)):
+    if INTERNAL_API_KEY and x_internal_api_key != INTERNAL_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing x-internal-api-key")
 
 
 @lru_cache(maxsize=1)
@@ -82,7 +92,7 @@ def health():
     return {"status": "ok", "asr_available": asr_available}
 
 
-@app.post("/price/predict", response_model=PricePredictResponse)
+@app.post("/price/predict", response_model=PricePredictResponse, dependencies=[Depends(require_internal_api_key)])
 def predict_price(req: PricePredictRequest):
     try:
         bundle = get_pricing_model()
@@ -130,7 +140,7 @@ def predict_price(req: PricePredictRequest):
     )
 
 
-@app.post("/asr")
+@app.post("/asr", dependencies=[Depends(require_internal_api_key)])
 async def transcribe(file: UploadFile = File(...), language_hint: Optional[str] = None):
     try:
         asr = get_asr_pipeline()
