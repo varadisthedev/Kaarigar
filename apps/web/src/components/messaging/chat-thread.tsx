@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { toast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
 import { getPusherClient, inquiryChannelName } from "@/infra/messaging/pusher-client"
 import type { Message } from "@/infra/db/schema"
@@ -194,6 +195,7 @@ export function ChatThread({
     if (!phoneNumber) return
     navigator.clipboard.writeText(phoneNumber)
     setCopiedPhone(true)
+    toast.success("Phone number copied to clipboard!")
     setTimeout(() => setCopiedPhone(false), 2000)
   }
 
@@ -215,8 +217,13 @@ export function ChatThread({
         setPaymentModalOpen(false)
         setPaymentAmount("")
         setPaymentDesc("")
+        toast.success("Razorpay payment link created!", `Amount: ${formatInr(amountNum)} · Valid for 30 days`)
         poll()
+      } else {
+        toast.error("Could not create payment link. Please try again.")
       }
+    } catch {
+      toast.error("Payment link creation failed.")
     } finally {
       setPaymentGenerating(false)
     }

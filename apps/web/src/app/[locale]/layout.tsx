@@ -6,6 +6,7 @@ import { notFound } from "next/navigation"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { ToastProvider } from "@/components/ui/toast"
 import { routing } from "@/i18n/routing"
 import { cn } from "@/lib/utils"
 
@@ -62,7 +63,9 @@ export default async function RootLayout({
     >
       <body>
         <ThemeProvider>
-          <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+          <ToastProvider>
+            <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

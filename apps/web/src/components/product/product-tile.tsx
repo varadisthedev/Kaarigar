@@ -14,6 +14,7 @@ import { useInView } from "@/hooks/use-in-view"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toast } from "@/components/ui/toast"
 import type { Product, ProductMedia } from "@/infra/db/schema"
 
 // Leaflet touches `window` at module load, so the map can only ever render
@@ -61,6 +62,7 @@ export function ProductTile({
       return
     }
     setContactPending(true)
+    toast.loading("Connecting to artisan chat...")
     const initialMsg =
       locale === "mr"
         ? "मला तुमचा नंबर मिळू शकेल का?"
@@ -79,8 +81,13 @@ export function ProductTile({
       })
       if (res.ok) {
         const data = await res.json()
+        toast.success("Chat opened with artisan!")
         window.location.href = `/inquiries/${data.inquiry.id}`
+      } else {
+        toast.error("Could not start chat. Please try again.")
       }
+    } catch {
+      toast.error("Failed to connect.")
     } finally {
       setContactPending(false)
     }
@@ -104,7 +111,12 @@ export function ProductTile({
       if (res.ok) {
         const data = await res.json()
         setInquiryId(data.inquiry.id)
+        toast.success("Offer sent to seller!", `${quantity} units @ ${formatInr(priceNum)}`)
+      } else {
+        toast.error("Could not send offer.")
       }
+    } catch {
+      toast.error("Failed to send offer.")
     } finally {
       setPending(false)
     }

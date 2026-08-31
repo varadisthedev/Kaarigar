@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
 
 export type LocationResult = {
@@ -75,7 +76,12 @@ export function LocationStep({
           setState(data.state)
           if (data.district) setDistrict(data.district)
           setDetectedSource("pincode")
+          toast.success("PIN Code matched!", `${data.district ? `${data.district}, ` : ""}${data.state}`)
+        } else {
+          toast.error("PIN Code not found. Please enter State/District manually.")
         }
+      } catch {
+        toast.error("Could not fetch PIN code.")
       } finally {
         setPinSearching(false)
       }
@@ -94,10 +100,12 @@ export function LocationStep({
           setState(data.state)
           if (data.district) setDistrict(data.district)
           setDetectedSource("gps")
+          toast.success("GPS Location detected!", `${data.district ? `${data.district}, ` : ""}${data.state}`)
         }
       }
     } catch (e) {
       console.warn("[location-step] Location fetch error:", e)
+      toast.error("Could not detect GPS location. Please select your State.")
     } finally {
       setLocating(false)
     }

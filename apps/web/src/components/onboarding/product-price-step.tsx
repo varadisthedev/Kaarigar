@@ -10,6 +10,7 @@ import { TalkingPrompt } from "./talking-prompt"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/toast"
 
 type Suggestion = { price: number; marketMin: number; marketMax: number }
 
@@ -36,7 +37,7 @@ export function ProductPriceStep({
   const [suggestion, setSuggestion] = React.useState<Suggestion | null>(null)
   const [suggestionLoading, setSuggestionLoading] = React.useState(false)
 
-  const fetchSuggestion = React.useCallback(async () => {
+  const fetchSuggestion = React.useCallback(async (isManual = false) => {
     if (!craftCategory) return
     setSuggestionLoading(true)
     try {
@@ -57,6 +58,9 @@ export function ProductPriceStep({
         setSuggestion({ price: data.price, marketMin: data.marketMin, marketMax: data.marketMax })
         // If price is currently empty, prefill suggested price
         setPrice((prev) => (prev ? prev : String(data.price)))
+        if (isManual) {
+          toast.success("AI market rates estimated!", `Suggested: ${formatInr(data.price)}`)
+        }
       }
     } finally {
       setSuggestionLoading(false)
@@ -125,7 +129,10 @@ export function ProductPriceStep({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPrice(String(suggestion.price))}
+              onClick={() => {
+                setPrice(String(suggestion.price))
+                toast.success("Applied suggested price!", formatInr(suggestion.price))
+              }}
               className="h-8 text-xs font-medium"
             >
               {locale === "mr" ? "किंमत वापरा" : locale === "hi" ? "मूल्य चुनें" : "Apply Price"}
@@ -152,7 +159,7 @@ export function ProductPriceStep({
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={fetchSuggestion}
+                onClick={() => fetchSuggestion(true)}
                 disabled={suggestionLoading}
                 className="h-9 text-xs"
               >

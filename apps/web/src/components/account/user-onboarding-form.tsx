@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { toast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
 
 const CRAFT_INTERESTS = [
@@ -146,13 +147,25 @@ export function UserOnboardingForm({
       const data = await res.json()
       if (!res.ok) {
         setErrorMessage(data.message || "Failed to complete profile. Please try again.")
+        toast.error(data.message || "Could not complete profile.")
         return
       }
 
+      toast.success(
+        locale === "mr"
+          ? "आपले प्रोफाइल पूर्ण झाले!"
+          : locale === "hi"
+            ? "प्रोफ़ाइल सफलतापूर्वक पूरी हुई!"
+            : "Profile completed! Welcome to Kaarigar 🎉"
+      )
+
       // Profile completed successfully — forward user to target destination
-      window.location.href = redirectUrl
+      setTimeout(() => {
+        window.location.href = redirectUrl
+      }, 500)
     } catch {
       setErrorMessage("Something went wrong. Please try again.")
+      toast.error("Something went wrong. Please try again.")
     } finally {
       setSubmitPending(false)
     }
