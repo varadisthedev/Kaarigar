@@ -58,10 +58,17 @@ Optional — the Next.js app works without it (falls back to the deterministic p
 
 ```bash
 cd apps/render
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python train.py
 uvicorn app.main:app --reload --port 8000
+
+
+You may get:
+cannot be loaded because running scripts is disabled
+
+Run:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 Then set `ML_SERVICE_URL=http://localhost:8000` in `apps/web/.env.local`. See `apps/render/README.md` for enabling the (heavier) ASR fallback tier, the shared `ML_SERVICE_API_KEY` between the two apps, and deployment notes — it needs a persistent host (Render, a Hugging Face Space, etc.), not Vercel.

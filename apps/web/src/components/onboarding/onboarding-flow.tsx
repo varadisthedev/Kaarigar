@@ -9,14 +9,13 @@ import { normalizePhoneInput, isValidE164 } from "@/core/auth/phone"
 import { apiFetch } from "@/lib/api-fetch"
 import { useCountdown } from "@/hooks/use-countdown"
 import type { BusinessDraft, ProductDraft } from "@/core/business/draft"
-import { businessQnaFields, productQnaFields } from "@/core/onboarding/qna-fields"
+import { businessQnaFields } from "@/core/onboarding/qna-fields"
 
 import { LanguageStep } from "./language-step"
 import { VoiceQna } from "./voice-qna"
 import { LocationStep, type LocationResult } from "./location-step"
-import { ProductPriceStep } from "./product-price-step"
+import { ProductCaptureFlow, type CapturedProduct } from "./product-capture-flow"
 import { ReviewStep } from "./review-step"
-import { TalkingPrompt } from "./talking-prompt"
 import { PhotoUpload, type ReadyPhoto } from "@/components/media/photo-upload"
 import { VideoCapture, type ReadyVideo } from "@/components/media/video-capture"
 import { CountrySelect } from "@/components/auth/country-select"
@@ -33,9 +32,7 @@ type Step =
   | "location"
   | "business_photos"
   | "video"
-  | "product_qna"
-  | "product_price"
-  | "product_photos"
+  | "product"
   | "phone"
   | "otp"
   | "review"
@@ -56,6 +53,13 @@ export function OnboardingFlow() {
   const [productDraft, setProductDraft] = React.useState<Partial<ProductDraft>>({})
   const [productPrice, setProductPrice] = React.useState<{ priceMin?: number; priceMax?: number }>({})
   const [productPhotos, setProductPhotos] = React.useState<ReadyPhoto[]>([])
+
+  function handleProductCaptured({ draft, price, photos }: CapturedProduct) {
+    setProductDraft(draft)
+    setProductPrice(price)
+    setProductPhotos(photos)
+    setStep("phone")
+  }
 
   // Phone/OTP sub-state — identical mechanics to the login page, but this
   // step comes *after* everything else is filled in, per spec: the artisan
@@ -241,10 +245,10 @@ export function OnboardingFlow() {
           <VideoCapture draftId={draftId} onChange={setVideo} />
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-2">
-          <Button className="w-full" onClick={() => setStep("product_qna")} disabled={!video}>
+          <Button className="w-full" onClick={() => setStep("product")} disabled={!video}>
             {t("qnaNext")}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setStep("product_qna")}>
+          <Button variant="ghost" size="sm" onClick={() => setStep("product")}>
             {t("videoSkip")}
           </Button>
         </CardFooter>
@@ -252,64 +256,16 @@ export function OnboardingFlow() {
     )
   }
 
-  if (step === "product_qna") {
+  if (step === "product") {
     return (
-      <Card>
-        <CardContent className="pt-5">
-          <VoiceQna
-            draftId={draftId}
-            locale={locale}
-            purpose="product_catalog"
-            fields={productQnaFields(locale)}
-            initialDraft={productDraft}
-            onComplete={(draft) => {
-              setProductDraft(draft)
-              setStep("product_price")
-            }}
-          />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (step === "product_price") {
-    return (
-      <Card>
-        <CardContent className="pt-5">
-          <ProductPriceStep
-            locale={locale}
-            onContinue={(price) => {
-              setProductPrice(price)
-              setStep("product_photos")
-            }}
-          />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (step === "product_photos") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("productPhotosTitle")}</CardTitle>
-          <CardDescription>{t("productPhotosSubtitle")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TalkingPrompt
-            promptKey="promptProductPhotosIntro"
-            locale={locale}
-            text={t("promptProductPhotosIntro")}
-            className="mb-4 flex items-start gap-2"
-          />
-          <PhotoUpload kind="onboarding_photo" draftId={draftId} onChange={setProductPhotos} />
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={() => setStep("phone")} disabled={productPhotos.length === 0}>
-            {t("qnaNext")}
-          </Button>
-        </CardFooter>
-      </Card>
+      <ProductCaptureFlow
+        draftId={draftId}
+        locale={locale}
+        craftCategory={businessDraft.craftCategory}
+        region={location.state}
+        initialDraft={productDraft}
+        onComplete={handleProductCaptured}
+      />
     )
   }
 

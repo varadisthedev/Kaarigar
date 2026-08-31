@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation"
 import { setRequestLocale } from "next-intl/server"
 
-import { features } from "@/config/env"
 import { findBusinessById } from "@/infra/db/repositories/business.repository"
 import { getCurrentUser } from "@/infra/http/current-user"
 import { NewProductFlow } from "@/components/onboarding/new-product-flow"
@@ -26,7 +25,6 @@ export default async function NewProductPage({
         businessId={business.id}
         craftCategory={business.craftCategory}
         state={business.state ?? undefined}
-        hasServerSpeech={features.sarvam || features.mlService}
       />
     </div>
   )

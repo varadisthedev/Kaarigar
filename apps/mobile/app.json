@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Kaarigar",
+    "slug": "kaarigar",
+    "scheme": "kaarigar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-splash-screen",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Kaarigar to access your microphone to describe your product."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Kaarigar to access your camera to photograph your products."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Kaarigar to access your photos to add product images."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kaarigar.mobile"
+    },
+    "android": {
+      "package": "com.kaarigar.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5f3d5a21-2f6f-4559-ad00-9345dc3c7661"
+      }
+    },
+    "owner": "varad-rauts-team"
+  }
+}
