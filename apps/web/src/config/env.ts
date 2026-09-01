@@ -33,6 +33,7 @@ const schema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_PHONE_NUMBER: z.string().optional(),
+  TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
   /** @deprecated use TWILIO_ACCOUNT_SID */
   TWILIO_SID: z.string().optional(),
   /** @deprecated use TWILIO_AUTH_TOKEN */
@@ -136,8 +137,10 @@ export const env = {
   ...raw,
   JWT_ACCESS_SECRET: raw.JWT_ACCESS_SECRET ?? devFallbackSecret("JWT_ACCESS_SECRET"),
   JWT_REFRESH_SECRET: raw.JWT_REFRESH_SECRET ?? devFallbackSecret("JWT_REFRESH_SECRET"),
-  TWILIO_ACCOUNT_SID: raw.TWILIO_ACCOUNT_SID ?? raw.TWILIO_SID,
-  TWILIO_AUTH_TOKEN: raw.TWILIO_AUTH_TOKEN ?? raw.TWILIO_CLIENT_SECRET,
+  TWILIO_ACCOUNT_SID: (raw.TWILIO_ACCOUNT_SID ?? raw.TWILIO_SID)?.trim(),
+  TWILIO_AUTH_TOKEN: (raw.TWILIO_AUTH_TOKEN ?? raw.TWILIO_CLIENT_SECRET)?.trim(),
+  TWILIO_PHONE_NUMBER: raw.TWILIO_PHONE_NUMBER?.trim(),
+  TWILIO_MESSAGING_SERVICE_SID: raw.TWILIO_MESSAGING_SERVICE_SID?.trim(),
 }
 
 /**
@@ -148,7 +151,11 @@ export const env = {
 export const features = {
   database: Boolean(env.DATABASE_URL),
   smsProvider: (
-    env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER ? "twilio" : "none"
+    env.TWILIO_ACCOUNT_SID &&
+    env.TWILIO_AUTH_TOKEN &&
+    (env.TWILIO_PHONE_NUMBER || env.TWILIO_MESSAGING_SERVICE_SID)
+      ? "twilio"
+      : "none"
   ) as "twilio" | "none",
   sarvam: Boolean(env.SARVAM_API_KEY),
   mlService: Boolean(env.ML_SERVICE_URL),

@@ -60,6 +60,7 @@
     "errorRateLimited": "Too many requests. Please wait a moment and try again.",
     "errorServerError": "Something went wrong on our end. Please try again.",
     "devOtpHint": "Dev mode — enter the OTP shown below (no SMS provider configured).",
+    "smsFallbackOtpHint": "SMS could not be delivered — use the code below to sign in.",
     "or": "or",
     "continueWithGoogle": "Continue with Google",
     "continueWithGithub": "Continue with GitHub",

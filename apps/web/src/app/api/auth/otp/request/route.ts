@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       ...(result.devCode ? { devCode: result.devCode } : {}),
+      ...(result.smsFailed ? { smsFailed: true } : {}),
     })
   } catch (err) {
     console.error("[otp:request] unhandled error:", err)

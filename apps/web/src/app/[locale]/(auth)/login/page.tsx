@@ -49,6 +49,7 @@ export default function LoginPage() {
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [devCode, setDevCode] = React.useState<string | null>(null)
+  const [smsFailed, setSmsFailed] = React.useState(false)
 
   const phoneE164 = normalizePhoneInput(dialCode, nationalNumber)
 
@@ -73,6 +74,7 @@ export default function LoginPage() {
         return
       }
       setDevCode(data.devCode ?? null)
+      setSmsFailed(Boolean(data.smsFailed))
       setStep("otp")
     } finally {
       setPending(false)
@@ -119,7 +121,8 @@ export default function LoginPage() {
           {devCode && (
             <Alert>
               <AlertDescription>
-                {t("devOtpHint")} <span className="font-mono font-semibold">{devCode}</span>
+                {smsFailed ? t("smsFallbackOtpHint") : t("devOtpHint")}{" "}
+                <span className="font-mono font-semibold">{devCode}</span>
               </AlertDescription>
             </Alert>
           )}

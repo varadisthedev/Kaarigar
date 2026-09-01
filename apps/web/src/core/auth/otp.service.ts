@@ -18,7 +18,7 @@ const OTP_TTL_MS = 20 * 60 * 1000
 const MAX_ATTEMPTS = 5
 
 export type RequestOtpResult =
-  | { ok: true; devCode?: string }
+  | { ok: true; devCode?: string; smsFailed?: boolean }
   | { ok: false; error: "invalid_phone" }
   | { ok: false; error: "rate_limited"; retryAfterSeconds: number }
   | { ok: false; error: "send_failed" }
@@ -55,6 +55,11 @@ export async function requestOtp(input: {
   const provider = getOtpProvider()
   const result = await provider.send({ phoneE164: input.phoneE164, code })
   if (!result.delivered) {
+    // Login fallback: show OTP on the page when SMS fails (Twilio trial/India geo, etc.)
+    if (input.purpose === "login") {
+      console.warn("[otp] SMS send failed — exposing code on login page as fallback", result.providerRef)
+      return { ok: true, devCode: code, smsFailed: true }
+    }
     return { ok: false, error: "send_failed" }
   }
 
@@ -85,8 +90,7 @@ export async function verifyOtp(input: {
     return { ok: false, error: "too_many_attempts" }
   }
 
-  const isDummyCode = process.env.NODE_ENV !== "production" && input.code === "123456"
-  const valid = isDummyCode || (await verifyOtpCode(challenge.codeHash, input.code))
+  const valid = await verifyOtpCode(challenge.codeHash, input.code)
   if (!valid) {
     await incrementOtpAttempts(challenge.id)
     return { ok: false, error: "invalid_code" }
