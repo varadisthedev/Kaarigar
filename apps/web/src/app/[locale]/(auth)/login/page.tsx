@@ -52,6 +52,7 @@ export default function LoginPage() {
   const [smsFailed, setSmsFailed] = React.useState(false)
 
   const phoneE164 = normalizePhoneInput(dialCode, nationalNumber)
+  const verifyingRef = React.useRef(false)
 
   async function sendOtp() {
     setError(null)
@@ -82,6 +83,8 @@ export default function LoginPage() {
   }
 
   async function verifyOtp(code: string) {
+    if (verifyingRef.current) return
+    verifyingRef.current = true
     setError(null)
     setPending(true)
     try {
@@ -107,6 +110,7 @@ export default function LoginPage() {
       router.refresh()
     } finally {
       setPending(false)
+      verifyingRef.current = false
     }
   }
 

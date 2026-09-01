@@ -72,16 +72,23 @@ export async function requestOtp(input: {
 }
 
 export type VerifyOtpResult =
-  | { ok: true }
+  | { ok: true; challengeId: string }
   | { ok: false; error: "expired_or_not_found" }
   | { ok: false; error: "too_many_attempts" }
   | { ok: false; error: "invalid_code" }
+
+function normalizeOtpCode(code: string): string {
+  const digits = code.replace(/\D/g, "")
+  if (digits.length === 0 || digits.length > 6) return code.trim()
+  return digits.padStart(6, "0")
+}
 
 export async function verifyOtp(input: {
   phoneE164: string
   purpose: NewOtpChallenge["purpose"]
   code: string
 }): Promise<VerifyOtpResult> {
+  const code = normalizeOtpCode(input.code)
   const challenge = await findActiveOtpChallenge(input.phoneE164, input.purpose)
   if (!challenge) {
     return { ok: false, error: "expired_or_not_found" }
@@ -90,12 +97,23 @@ export async function verifyOtp(input: {
     return { ok: false, error: "too_many_attempts" }
   }
 
-  const valid = await verifyOtpCode(challenge.codeHash, input.code)
+  let valid = false
+  try {
+    valid = await verifyOtpCode(challenge.codeHash, code)
+  } catch (err) {
+    console.error("[otp] verify hash threw:", err)
+    return { ok: false, error: "invalid_code" }
+  }
+
   if (!valid) {
     await incrementOtpAttempts(challenge.id)
     return { ok: false, error: "invalid_code" }
   }
 
-  await consumeOtpChallenge(challenge.id)
-  return { ok: true }
+  // Consumed only after session is issued — see otp/verify route.
+  return { ok: true, challengeId: challenge.id }
+}
+
+export async function finalizeOtpChallenge(challengeId: string): Promise<void> {
+  await consumeOtpChallenge(challengeId)
 }

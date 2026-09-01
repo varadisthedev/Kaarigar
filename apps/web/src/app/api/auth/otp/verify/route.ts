@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { z } from "zod"
 
-import { verifyOtp } from "@/core/auth/otp.service"
+import { verifyOtp, finalizeOtpChallenge } from "@/core/auth/otp.service"
 import { issueSession } from "@/core/auth/session.service"
 import { findOrCreateUserByPhone } from "@/infra/db/repositories/users.repository"
 import { attachAuthCookies, clientIp, isNativeClient } from "@/infra/http/auth-cookies"
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       userAgent: req.headers.get("user-agent"),
       ip: clientIp(req),
     })
+    await finalizeOtpChallenge(result.challengeId)
 
     const body = {
       ok: true,
@@ -63,7 +64,8 @@ export async function POST(req: NextRequest) {
     if (!native) attachAuthCookies(res, tokens)
     return res
   } catch (err) {
-    console.error("[otp:verify] unhandled error:", err)
+    const detail = err instanceof Error ? err.message : String(err)
+    console.error("[otp:verify] unhandled error:", detail, err)
     return NextResponse.json({ error: "server_error" }, { status: 500 })
   }
 }
