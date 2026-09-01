@@ -10,16 +10,20 @@ import { ToastProvider } from "@/components/ui/toast"
 import { routing } from "@/i18n/routing"
 import { cn } from "@/lib/utils"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
-const notoSerifHeading = Noto_Serif({ subsets: ["latin"], variable: "--font-heading" })
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" })
+const notoSerifHeading = Noto_Serif({ subsets: ["latin"], variable: "--font-heading", display: "swap" })
 // Devanagari has no Latin glyphs of its own — this is what makes Hindi pages
 // look designed rather than a fallback-font afterthought. Activated via the
 // `html[lang="hi"]` override in globals.css, not applied unconditionally.
+// `preload: false` prevents the browser warning "preloaded with link preload
+// was not used within a few seconds" on en/mr pages where this subset is idle.
 const notoSansDevanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari"],
   variable: "--font-devanagari",
+  display: "swap",
+  preload: false,
 })
-const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
+const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" })
 
 export const metadata: Metadata = {
   title: "Kaarigar — Indian Artisans, Direct to Business",

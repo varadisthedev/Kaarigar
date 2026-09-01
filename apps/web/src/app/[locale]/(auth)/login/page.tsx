@@ -69,6 +69,7 @@ export default function LoginPage() {
       const data = await res.json()
       if (!res.ok) {
         if (data.error === "rate_limited") setError(t("errorRateLimited"))
+        else if (data.error === "server_error") setError(t("errorServerError"))
         else setError(t("errorInvalidPhone"))
         return
       }
@@ -94,6 +95,7 @@ export default function LoginPage() {
         if (data.error === "invalid_code") setError(t("errorInvalidOtp"))
         else if (data.error === "expired_or_not_found") setError(t("errorOtpExpired"))
         else if (data.error === "too_many_attempts") setError(t("errorTooManyAttempts"))
+        else if (data.error === "server_error") setError(t("errorServerError"))
         else setError(t("errorInvalidOtp"))
         return
       }

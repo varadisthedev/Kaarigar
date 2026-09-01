@@ -20,19 +20,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 })
   }
 
-  const result = await requestOtp({
-    phoneE164: parsed.data.phoneE164,
-    purpose: parsed.data.purpose,
-    ip: clientIp(req),
-  })
+  try {
+    const result = await requestOtp({
+      phoneE164: parsed.data.phoneE164,
+      purpose: parsed.data.purpose,
+      ip: clientIp(req),
+    })
 
-  if (!result.ok) {
-    const status = result.error === "rate_limited" ? 429 : 400
-    return NextResponse.json(
-      { error: result.error, ...(result.error === "rate_limited" ? { retryAfterSeconds: result.retryAfterSeconds } : {}) },
-      { status }
-    )
+    if (!result.ok) {
+      const status = result.error === "rate_limited" ? 429 : 400
+      return NextResponse.json(
+        { error: result.error, ...(result.error === "rate_limited" ? { retryAfterSeconds: result.retryAfterSeconds } : {}) },
+        { status }
+      )
+    }
+
+    return NextResponse.json({ ok: true, ...(result.devCode ? { devCode: result.devCode } : {}) })
+  } catch (err) {
+    console.error("[otp:request] unhandled error:", err)
+    return NextResponse.json({ error: "server_error" }, { status: 500 })
   }
-
-  return NextResponse.json({ ok: true, ...(result.devCode ? { devCode: result.devCode } : {}) })
 }

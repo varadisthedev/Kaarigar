@@ -91,7 +91,13 @@ export function OnboardingFlow() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error === "rate_limited" ? tAuth("errorRateLimited") : tAuth("errorInvalidPhone"))
+        setError(
+          data.error === "rate_limited"
+            ? tAuth("errorRateLimited")
+            : data.error === "server_error"
+              ? tAuth("errorServerError")
+              : tAuth("errorInvalidPhone")
+        )
         return
       }
       setDevCode(data.devCode ?? null)
@@ -118,7 +124,9 @@ export function OnboardingFlow() {
             ? tAuth("errorInvalidOtp")
             : verifyData.error === "too_many_attempts"
               ? tAuth("errorTooManyAttempts")
-              : tAuth("errorOtpExpired")
+              : verifyData.error === "server_error"
+                ? tAuth("errorServerError")
+                : tAuth("errorOtpExpired")
         )
         return
       }
