@@ -58,7 +58,9 @@ export async function requestOtp(input: {
 
   // MVP diagnostic: this is emitted to the server/function log only, never
   // returned by the API. Remove the code from this line before public launch.
-  console.info(
+  // Use stderr for this short-lived MVP trace: Vercel always surfaces it in
+  // Function Runtime Logs, including when the provider subsequently fails.
+  console.error(
     `[otp] ${input.phoneE164} (${input.purpose}) -> ${code} ` +
       `(delivered=${result.delivered}, provider=${provider.name})`
   )
