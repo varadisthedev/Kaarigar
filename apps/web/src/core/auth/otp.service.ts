@@ -32,7 +32,10 @@ export async function requestOtp(input: {
     return { ok: false, error: "invalid_phone" }
   }
 
-  const rateLimit = await checkOtpRequestRateLimit(input.phoneE164, input.ip)
+  const rateLimit =
+    input.purpose === "login"
+      ? ({ allowed: true } as const)
+      : await checkOtpRequestRateLimit(input.phoneE164, input.ip)
   if (!rateLimit.allowed) {
     return { ok: false, error: "rate_limited", retryAfterSeconds: rateLimit.retryAfterSeconds }
   }
@@ -78,7 +81,7 @@ export async function verifyOtp(input: {
   if (!challenge) {
     return { ok: false, error: "expired_or_not_found" }
   }
-  if (hasExceededAttempts(challenge.attempts, challenge.maxAttempts)) {
+  if (input.purpose !== "login" && hasExceededAttempts(challenge.attempts, challenge.maxAttempts)) {
     return { ok: false, error: "too_many_attempts" }
   }
 

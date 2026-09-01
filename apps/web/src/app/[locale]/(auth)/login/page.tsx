@@ -9,7 +9,6 @@ import { defaultCountry } from "@/config/countries"
 import { normalizePhoneInput, isValidE164 } from "@/core/auth/phone"
 import { sanitizeRedirectPath, stripLocalePrefix } from "@/core/auth/redirect-safety"
 import { apiFetch } from "@/lib/api-fetch"
-import { useCountdown } from "@/hooks/use-countdown"
 
 import { CountrySelect } from "@/components/auth/country-select"
 import { OtpInput } from "@/components/auth/otp-input"
@@ -49,7 +48,6 @@ export default function LoginPage() {
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [devCode, setDevCode] = React.useState<string | null>(null)
-  const resend = useCountdown(60)
 
   const phoneE164 = normalizePhoneInput(dialCode, nationalNumber)
 
@@ -68,15 +66,13 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        if (data.error === "rate_limited") setError(t("errorRateLimited"))
-        else if (data.error === "send_failed") setError(t("errorServerError"))
+        if (data.error === "send_failed") setError(t("errorServerError"))
         else if (data.error === "server_error") setError(t("errorServerError"))
         else setError(t("errorInvalidPhone"))
         return
       }
       setDevCode(data.devCode ?? null)
       setStep("otp")
-      resend.start()
     } finally {
       setPending(false)
     }
@@ -95,7 +91,6 @@ export default function LoginPage() {
       if (!res.ok) {
         if (data.error === "invalid_code") setError(t("errorInvalidOtp"))
         else if (data.error === "expired_or_not_found") setError(t("errorOtpExpired"))
-        else if (data.error === "too_many_attempts") setError(t("errorTooManyAttempts"))
         else if (data.error === "server_error") setError(t("errorServerError"))
         else setError(t("errorInvalidOtp"))
         return
@@ -135,13 +130,8 @@ export default function LoginPage() {
           <OtpInput onComplete={verifyOtp} disabled={pending} invalid={Boolean(error)} />
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-3 p-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={resend.isActive || pending}
-            onClick={sendOtp}
-          >
-            {resend.isActive ? t("otpResendIn", { seconds: resend.seconds }) : t("otpResend")}
+          <Button variant="ghost" size="sm" disabled={pending} onClick={sendOtp}>
+            {t("otpResend")}
           </Button>
           <Button variant="link" size="sm" onClick={() => setStep("phone")} disabled={pending}>
             {t("otpChangeNumber")}
