@@ -59,7 +59,7 @@
     "errorTooManyAttempts": "Too many attempts. Request a new code.",
     "errorRateLimited": "Too many requests. Please wait a moment and try again.",
     "errorServerError": "Something went wrong on our end. Please try again.",
-    "devOtpHint": "Dev mode — OTP sent to server console (no SMS provider configured).",
+    "devOtpHint": "Dev mode — enter the OTP shown below (no SMS provider configured).",
     "or": "or",
     "continueWithGoogle": "Continue with Google",
     "continueWithGithub": "Continue with GitHub",

@@ -29,10 +29,14 @@ const schema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32).optional(),
   JWT_REFRESH_SECRET: z.string().min(32).optional(),
 
-  // --- OTP delivery (MSG91) ---
-  MSG91_AUTH_KEY: z.string().optional(),
-  MSG91_TEMPLATE_ID: z.string().optional(),
-  MSG91_SENDER_ID: z.string().optional(),
+  // --- OTP delivery (Twilio SMS) ---
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_PHONE_NUMBER: z.string().optional(),
+  /** @deprecated use TWILIO_ACCOUNT_SID */
+  TWILIO_SID: z.string().optional(),
+  /** @deprecated use TWILIO_AUTH_TOKEN */
+  TWILIO_CLIENT_SECRET: z.string().optional(),
 
   // --- Speech-to-text (Sarvam AI primary) ---
   SARVAM_API_KEY: z.string().optional(),
@@ -132,6 +136,8 @@ export const env = {
   ...raw,
   JWT_ACCESS_SECRET: raw.JWT_ACCESS_SECRET ?? devFallbackSecret("JWT_ACCESS_SECRET"),
   JWT_REFRESH_SECRET: raw.JWT_REFRESH_SECRET ?? devFallbackSecret("JWT_REFRESH_SECRET"),
+  TWILIO_ACCOUNT_SID: raw.TWILIO_ACCOUNT_SID ?? raw.TWILIO_SID,
+  TWILIO_AUTH_TOKEN: raw.TWILIO_AUTH_TOKEN ?? raw.TWILIO_CLIENT_SECRET,
 }
 
 /**
@@ -141,9 +147,9 @@ export const env = {
  */
 export const features = {
   database: Boolean(env.DATABASE_URL),
-  smsProvider: (env.MSG91_AUTH_KEY && env.MSG91_TEMPLATE_ID ? "msg91" : "console") as
-    | "msg91"
-    | "console",
+  smsProvider: (
+    env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER ? "twilio" : "none"
+  ) as "twilio" | "none",
   sarvam: Boolean(env.SARVAM_API_KEY),
   mlService: Boolean(env.ML_SERVICE_URL),
   gemini: Boolean(env.GEMINI_API_KEY),

@@ -13,10 +13,11 @@ export default function TabsLayout() {
   if (!loading && !user) return <Redirect href="/(auth)/login" />
 
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
-      <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: () => <TabIcon label="🏠" /> }} />
+    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: "#7c3aed" }}>
+      <Tabs.Screen name="index" options={{ title: "Marketplace", tabBarIcon: () => <TabIcon label="🏪" /> }} />
       <Tabs.Screen name="catalog/index" options={{ title: "Catalog", tabBarIcon: () => <TabIcon label="🧺" /> }} />
-      <Tabs.Screen name="add-product" options={{ title: "Add", tabBarIcon: () => <TabIcon label="➕" /> }} />
+      <Tabs.Screen name="add-product" options={{ title: "Add Product", tabBarIcon: () => <TabIcon label="➕" /> }} />
+      <Tabs.Screen name="pricing" options={{ title: "NLP Pricing", tabBarIcon: () => <TabIcon label="💡" /> }} />
       <Tabs.Screen name="chat/index" options={{ title: "Chat", tabBarIcon: () => <TabIcon label="💬" /> }} />
       <Tabs.Screen name="catalog/[slug]" options={{ href: null }} />
       <Tabs.Screen name="chat/[id]" options={{ href: null }} />

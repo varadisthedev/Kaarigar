@@ -43,6 +43,10 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // @node-rs/argon2 ships pre-compiled native .node binaries — webpack
+  // cannot bundle them. Marking it external tells Next.js to require() it
+  // directly from node_modules at runtime instead of trying to inline it.
+  serverExternalPackages: ["@node-rs/argon2"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },

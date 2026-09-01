@@ -35,7 +35,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    return NextResponse.json({ ok: true, ...(result.devCode ? { devCode: result.devCode } : {}) })
+    return NextResponse.json({
+      ok: true,
+      ...(result.devCode ? { devCode: result.devCode } : {}),
+    })
   } catch (err) {
     console.error("[otp:request] unhandled error:", err)
     return NextResponse.json({ error: "server_error" }, { status: 500 })

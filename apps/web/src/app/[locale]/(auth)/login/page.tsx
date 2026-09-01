@@ -69,6 +69,7 @@ export default function LoginPage() {
       const data = await res.json()
       if (!res.ok) {
         if (data.error === "rate_limited") setError(t("errorRateLimited"))
+        else if (data.error === "send_failed") setError(t("errorServerError"))
         else if (data.error === "server_error") setError(t("errorServerError"))
         else setError(t("errorInvalidPhone"))
         return

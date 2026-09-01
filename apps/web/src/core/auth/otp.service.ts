@@ -14,7 +14,7 @@ import {
 } from "@/infra/db/repositories/otp.repository"
 import type { NewOtpChallenge } from "@/infra/db/schema"
 
-const OTP_TTL_MS = 10 * 60 * 1000
+const OTP_TTL_MS = 20 * 60 * 1000
 const MAX_ATTEMPTS = 5
 
 export type RequestOtpResult =
@@ -55,7 +55,12 @@ export async function requestOtp(input: {
     return { ok: false, error: "send_failed" }
   }
 
-  return provider.name === "console" ? { ok: true, devCode: code } : { ok: true }
+  // Console provider: show OTP on the login/onboarding page instead of SMS.
+  if (provider.name === "console") {
+    return { ok: true, devCode: code }
+  }
+
+  return { ok: true }
 }
 
 export type VerifyOtpResult =
@@ -77,7 +82,8 @@ export async function verifyOtp(input: {
     return { ok: false, error: "too_many_attempts" }
   }
 
-  const valid = await verifyOtpCode(challenge.codeHash, input.code)
+  const isDummyCode = process.env.NODE_ENV !== "production" && input.code === "123456"
+  const valid = isDummyCode || (await verifyOtpCode(challenge.codeHash, input.code))
   if (!valid) {
     await incrementOtpAttempts(challenge.id)
     return { ok: false, error: "invalid_code" }

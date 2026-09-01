@@ -9,6 +9,7 @@ import { findInquiryById } from "@/infra/db/repositories/inquiries.repository"
 import { createOrder, createPayment } from "@/infra/db/repositories/orders.repository"
 import { createMessage } from "@/infra/db/repositories/messages.repository"
 import { createRazorpayOrder } from "@/infra/payments/razorpay.client"
+import { notifyNewMessage } from "@/infra/messaging/pusher-server"
 
 const bodySchema = z.object({
   inquiryId: z.string().uuid(),
@@ -76,11 +77,12 @@ export async function POST(req: NextRequest) {
 
   // Send interactive payment link card message into chat thread
   const paymentMessage = `[PAYMENT_LINK:${amount}:${order.id}:${encodeURIComponent(desc)}]`
-  await createMessage({
+  const message = await createMessage({
     inquiryId: inquiry.id,
     senderId: user.sub,
     body: paymentMessage,
   })
+  await notifyNewMessage(inquiry.id, message)
 
   const expireAt = new Date(Date.now() + MAX_EXPIRY_SECONDS * 1000).toISOString()
 

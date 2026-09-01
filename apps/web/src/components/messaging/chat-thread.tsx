@@ -251,8 +251,9 @@ export function ChatThread({
         order_id: paymentData.razorpayOrderId,
         name: "Kaarigar",
         description: `Order Payment (${formatInr(amount)})`,
-        handler: () => {
-          sendBody(`✅ Payment of ${formatInr(amount)} completed successfully!`)
+        handler: async () => {
+          await sendBody(`✅ Payment of ${formatInr(amount)} completed successfully!`)
+          poll()
         },
         theme: { color: "#059669" },
       })
