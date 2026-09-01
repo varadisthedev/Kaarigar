@@ -11,6 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
   const provider = getOAuthProvider(providerName)
 
   const localeParam = req.nextUrl.searchParams.get("locale")
+  const isNative = req.nextUrl.searchParams.get("native") === "true"
   const locale = routing.locales.includes(localeParam as (typeof routing.locales)[number])
     ? localeParam!
     : routing.defaultLocale
@@ -26,6 +27,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
   const redirectUri = `${req.nextUrl.origin}/api/auth/oauth/${providerName}/callback`
 
   const res = NextResponse.redirect(provider.buildAuthUrl({ state, redirectUri }))
-  setOAuthFlowCookies(res, { state, next, locale })
+  setOAuthFlowCookies(res, { state, next, locale, isNative })
   return res
 }

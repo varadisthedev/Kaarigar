@@ -34,9 +34,11 @@ export default async function MyBusinessesPage({
           <h1 className="font-heading text-2xl font-medium text-foreground">{t("title")}</h1>
           <p className="mt-1 text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <Link href="/onboard" className={buttonVariants()}>
-          {t("registerNew")}
-        </Link>
+        {businesses.length === 0 && (
+          <Link href="/onboard" className={buttonVariants()}>
+            {t("registerNew")}
+          </Link>
+        )}
       </div>
 
       {businesses.length === 0 ? (

@@ -9,10 +9,16 @@ import {
   OAUTH_STATE_COOKIE,
   OAUTH_NEXT_COOKIE,
   OAUTH_LOCALE_COOKIE,
+  OAUTH_NATIVE_COOKIE,
   clearOAuthFlowCookies,
 } from "@/infra/http/oauth-cookies"
 
-function errorRedirect(origin: string, locale: string, code: string) {
+function errorRedirect(origin: string, locale: string, code: string, isNative?: boolean) {
+  if (isNative) {
+    const res = NextResponse.redirect(`kaarigar://auth/callback?error=${code}`)
+    clearOAuthFlowCookies(res)
+    return res
+  }
   const url = new URL(`/${locale}/login`, origin)
   url.searchParams.set("oauthError", code)
   const res = NextResponse.redirect(url)
@@ -23,13 +29,13 @@ function errorRedirect(origin: string, locale: string, code: string) {
 export async function GET(req: NextRequest, { params }: { params: Promise<{ provider: string }> }) {
   const { provider: providerName } = await params
   const locale = req.cookies.get(OAUTH_LOCALE_COOKIE)?.value ?? "en"
+  const isNative = req.cookies.get(OAUTH_NATIVE_COOKIE)?.value === "true"
   const provider = getOAuthProvider(providerName)
-  if (!provider) return errorRedirect(req.nextUrl.origin, locale, "not_configured")
 
-  // The user denying consent on the provider's screen arrives here as
-  // `?error=access_denied` — not a bug, just "no thanks".
+  if (!provider) return errorRedirect(req.nextUrl.origin, locale, "not_configured", isNative)
+
   if (req.nextUrl.searchParams.get("error")) {
-    return errorRedirect(req.nextUrl.origin, locale, "denied")
+    return errorRedirect(req.nextUrl.origin, locale, "denied", isNative)
   }
 
   const code = req.nextUrl.searchParams.get("code")
@@ -38,7 +44,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
   const next = sanitizeRedirectPath(req.cookies.get(OAUTH_NEXT_COOKIE)?.value, `/${locale}`)
 
   if (!code || !state || !cookieState || state !== cookieState) {
-    return errorRedirect(req.nextUrl.origin, locale, "invalid_state")
+    return errorRedirect(req.nextUrl.origin, locale, "invalid_state", isNative)
   }
 
   try {
@@ -52,6 +58,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
       ip: clientIp(req),
     })
 
+    if (isNative) {
+      const userPayload = JSON.stringify({
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        locale: user.locale,
+      })
+      const nativeUrl = `kaarigar://auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&user=${encodeURIComponent(userPayload)}`
+      const res = NextResponse.redirect(nativeUrl)
+      clearOAuthFlowCookies(res)
+      return res
+    }
+
     let destination = next
     if (!user.profileCompletedAt) {
       destination = `/${locale}/account/onboarding${next && next !== `/${locale}` ? `?redirect=${encodeURIComponent(next)}` : ""}`
@@ -63,6 +82,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
     return res
   } catch (err) {
     console.error(`[oauth:${providerName}] callback failed:`, err)
-    return errorRedirect(req.nextUrl.origin, locale, "failed")
+    return errorRedirect(req.nextUrl.origin, locale, "failed", isNative)
   }
 }

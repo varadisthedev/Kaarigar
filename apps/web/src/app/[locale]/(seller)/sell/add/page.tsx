@@ -23,7 +23,10 @@ export default async function AddPage({
   const businesses = await findBusinessesByOwner(user.sub)
   const approved = businesses.filter((b) => b.status === "approved")
 
-  if (approved.length === 0) redirect(`/${locale}/onboard`)
+  if (approved.length === 0) {
+    if (businesses.length > 0) redirect(`/${locale}/sell/businesses`)
+    redirect(`/${locale}/onboard`)
+  }
   if (approved.length === 1) redirect(`/${locale}/sell/${approved[0].id}/products/new`)
 
   const t = await getTranslations("sell")

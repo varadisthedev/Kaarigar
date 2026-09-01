@@ -103,6 +103,8 @@
     "submittedSubtitle": "Your business is live on Kaarigar marketplace.",
     "submittedTrackHint": "Your business ID: {businessCode}",
     "submittedProductHint": "Your first product is live too.",
+    "submitFailed": "Something went wrong while submitting. Please try again.",
+    "businessAlreadyRegistered": "You already have a business registered. Add products from your seller dashboard instead.",
 
     "promptBusinessName": "What's your business called?",
     "promptCraftCategory": "What craft do you make? For example pottery, weaving, or jewelry.",

@@ -4,6 +4,7 @@ import { randomInt } from "node:crypto"
 import { isValidE164 } from "./phone"
 import { hashOtpCode, verifyOtpCode } from "./otp-hash"
 import { hasExceededAttempts } from "./otp-policy"
+import { env } from "@/config/env"
 import { getOtpProvider } from "@/infra/sms"
 import { checkOtpRequestRateLimit } from "@/infra/ratelimit/otp-rate-limit"
 import {
@@ -54,17 +55,28 @@ export async function requestOtp(input: {
 
   const provider = getOtpProvider()
   const result = await provider.send({ phoneE164: input.phoneE164, code })
+
+  // MVP diagnostic: this is emitted to the server/function log only, never
+  // returned by the API. Remove the code from this line before public launch.
+  console.info(
+    `[otp] ${input.phoneE164} (${input.purpose}) -> ${code} ` +
+      `(delivered=${result.delivered}, provider=${provider.name})`
+  )
+
   if (!result.delivered) {
-    // Login fallback: show OTP on the page when SMS fails (Twilio trial/India geo, etc.)
-    if (input.purpose === "login") {
-      console.warn("[otp] OTP delivery failed — exposing code on login page as fallback", result.providerRef)
-      return { ok: true, devCode: code, smsFailed: true }
-    }
+    // A challenge may be stored before delivery so its code can be verified only
+    // after a successful resend. Never claim success or reveal it to a client
+    // when the provider rejected the message.
+    console.error(
+      `[otp] delivery failed for ${input.phoneE164} (${input.purpose}, provider=${provider.name})`,
+      result.providerRef
+    )
     return { ok: false, error: "send_failed" }
   }
 
-  // Console provider: show OTP on the login/onboarding page instead of SMS.
-  if (provider.name === "console") {
+  // The console provider is deliberately a local-development convenience.
+  // Do not return authentication codes from a deployed environment.
+  if (provider.name === "console" && env.NODE_ENV !== "production") {
     return { ok: true, devCode: code }
   }
 

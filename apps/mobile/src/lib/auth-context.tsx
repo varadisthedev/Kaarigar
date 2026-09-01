@@ -1,8 +1,12 @@
 import * as React from "react"
+import * as WebBrowser from "expo-web-browser"
+import * as Linking from "expo-linking"
 
 import { apiFetch, onLoggedOut } from "./api-client"
 import { clearTokens, getTokens, setTokens } from "./auth-storage"
 import { API_URL } from "./config"
+
+WebBrowser.maybeCompleteAuthSession()
 
 export type SessionUser = {
   id: string
@@ -20,6 +24,7 @@ type AuthState = {
     countryCode: string
     code: string
   }) => Promise<{ ok: boolean; error?: string }>
+  loginWithGoogle: () => Promise<{ ok: boolean; error?: string }>
   logout: () => Promise<void>
 }
 
@@ -76,6 +81,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   )
 
+  const loginWithGoogle = React.useCallback(async () => {
+    try {
+      const redirectUrl = Linking.createURL("auth/callback")
+      const authUrl = `${API_URL}/api/auth/oauth/google/start?native=true`
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl)
+
+      if (result.type === "success" && result.url) {
+        const parsed = Linking.parse(result.url)
+        const accessToken = parsed.queryParams?.accessToken as string | undefined
+        const refreshToken = parsed.queryParams?.refreshToken as string | undefined
+
+        if (accessToken && refreshToken) {
+          await setTokens({ accessToken, refreshToken })
+          await refreshMe()
+          return { ok: true }
+        }
+      }
+      return { ok: false, error: "google_login_cancelled" }
+    } catch (err) {
+      console.error("[auth:google] OAuth error:", err)
+      return { ok: false, error: "google_login_failed" }
+    }
+  }, [refreshMe])
+
   const logout = React.useCallback(async () => {
     await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {})
     await clearTokens()
@@ -83,7 +112,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, requestOtp, verifyOtp, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, requestOtp, verifyOtp, loginWithGoogle, logout }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 

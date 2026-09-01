@@ -103,6 +103,8 @@
     "submittedSubtitle": "आपका व्यवसाय अब Kaarigar मार्केटप्लेस पर लाइव है।",
     "submittedTrackHint": "आपका व्यवसाय आईडी: {businessCode}",
     "submittedProductHint": "आपका पहला उत्पाद भी लाइव है।",
+    "submitFailed": "सबमिट करते समय कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+    "businessAlreadyRegistered": "आपका व्यवसाय पहले से पंजीकृत है। विक्रेता डैशबोर्ड से उत्पाद जोड़ें।",
 
     "promptBusinessName": "आपके व्यवसाय का नाम क्या है?",
     "promptCraftCategory": "आप कौन सा शिल्प बनाते हैं? जैसे मिट्टी के बर्तन, बुनाई, या आभूषण।",

@@ -2,7 +2,7 @@ import "server-only"
 
 import { getSpeechProviderChain } from "@/infra/speech"
 import { createVoiceSession, attachVoiceSessionsToBusiness } from "@/infra/db/repositories/voice.repository"
-import { createBusiness, addBusinessMedia } from "@/infra/db/repositories/business.repository"
+import { createBusiness, addBusinessMedia, findBusinessesByOwner } from "@/infra/db/repositories/business.repository"
 import { createProductListing } from "./catalog.service"
 import { extractBusinessDraft, extractProductDraft } from "./extraction.service"
 import { generateBusinessCode } from "./business-code"
@@ -122,6 +122,11 @@ export type SubmitBusinessInput = {
  * bulk-publishes any draft products at the same time, so the product goes
  * live in the same step. */
 export async function submitBusiness(input: SubmitBusinessInput) {
+  const existing = await findBusinessesByOwner(input.ownerId)
+  if (existing.length > 0) {
+    throw new Error("business_exists")
+  }
+
   const business = await createBusiness({
     ownerId: input.ownerId,
     displayName: input.displayName,

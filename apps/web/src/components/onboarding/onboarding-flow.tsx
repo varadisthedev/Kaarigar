@@ -5,10 +5,7 @@ import Image from "next/image"
 import { CheckCircle2 } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
 
-import { defaultCountry } from "@/config/countries"
-import { normalizePhoneInput, isValidE164 } from "@/core/auth/phone"
 import { apiFetch } from "@/lib/api-fetch"
-import { useCountdown } from "@/hooks/use-countdown"
 import type { BusinessDraft, ProductDraft } from "@/core/business/draft"
 import { businessQnaFields } from "@/core/onboarding/qna-fields"
 
@@ -19,13 +16,8 @@ import { ProductCaptureFlow, type CapturedProduct } from "./product-capture-flow
 import { ReviewStep } from "./review-step"
 import { PhotoUpload, type ReadyPhoto } from "@/components/media/photo-upload"
 import { VideoCapture, type ReadyVideo } from "@/components/media/video-capture"
-import { CountrySelect } from "@/components/auth/country-select"
-import { OtpInput } from "@/components/auth/otp-input"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 type Step =
   | "language"
@@ -34,14 +26,11 @@ type Step =
   | "business_photos"
   | "video"
   | "product"
-  | "phone"
-  | "otp"
   | "review"
   | "submitted"
 
 export function OnboardingFlow() {
   const t = useTranslations("onboarding")
-  const tAuth = useTranslations("auth")
   const locale = useLocale() as "en" | "hi" | "mr"
 
   const [draftId] = React.useState(() => crypto.randomUUID())
@@ -55,86 +44,15 @@ export function OnboardingFlow() {
   const [productPrice, setProductPrice] = React.useState<{ priceMin?: number; priceMax?: number }>({})
   const [productPhotos, setProductPhotos] = React.useState<ReadyPhoto[]>([])
 
+  const [pending, setPending] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [businessCode, setBusinessCode] = React.useState<string | null>(null)
+
   function handleProductCaptured({ draft, price, photos }: CapturedProduct) {
     setProductDraft(draft)
     setProductPrice(price)
     setProductPhotos(photos)
-    setStep("phone")
-  }
-
-  // Phone/OTP sub-state — identical mechanics to the login page, but this
-  // step comes *after* everything else is filled in, per spec: the artisan
-  // stays a guest through the whole conversation, and only gets an account
-  // right at the end.
-  const [dialCode, setDialCode] = React.useState(defaultCountry.dialCode)
-  const [nationalNumber, setNationalNumber] = React.useState("")
-  const [pending, setPending] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-  const [devCode, setDevCode] = React.useState<string | null>(null)
-  const [businessCode, setBusinessCode] = React.useState<string | null>(null)
-  const resend = useCountdown(60)
-
-  const phoneE164 = normalizePhoneInput(dialCode, nationalNumber)
-
-  async function sendOtp() {
-    setError(null)
-    if (!isValidE164(phoneE164)) {
-      setError(tAuth("errorInvalidPhone"))
-      return
-    }
-    setPending(true)
-    try {
-      const res = await apiFetch("/api/auth/otp/request", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phoneE164, purpose: "phone_verify" }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(
-          data.error === "rate_limited"
-            ? tAuth("errorRateLimited")
-            : data.error === "server_error"
-              ? tAuth("errorServerError")
-              : tAuth("errorInvalidPhone")
-        )
-        return
-      }
-      setDevCode(data.devCode ?? null)
-      setStep("otp")
-      resend.start()
-    } finally {
-      setPending(false)
-    }
-  }
-
-  async function verifyOtp(code: string) {
-    setError(null)
-    setPending(true)
-    try {
-      const verifyRes = await apiFetch("/api/auth/otp/verify", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phoneE164, countryCode: dialCode, code, purpose: "phone_verify", locale }),
-      })
-      const verifyData = await verifyRes.json()
-      if (!verifyRes.ok) {
-        setError(
-          verifyData.error === "invalid_code"
-            ? tAuth("errorInvalidOtp")
-            : verifyData.error === "too_many_attempts"
-              ? tAuth("errorTooManyAttempts")
-              : verifyData.error === "server_error"
-                ? tAuth("errorServerError")
-                : tAuth("errorOtpExpired")
-        )
-        return
-      }
-      setError(null)
-      setStep("review")
-    } finally {
-      setPending(false)
-    }
+    setStep("review")
   }
 
   async function submitNow() {
@@ -174,7 +92,12 @@ export function OnboardingFlow() {
         }),
       })
       if (!submitRes.ok) {
-        setError(tAuth("errorInvalidPhone")) // generic — submission failures are rare and logged server-side
+        const data = await submitRes.json().catch(() => ({}))
+        if (data.error === "business_exists") {
+          setError(t("businessAlreadyRegistered"))
+        } else {
+          setError(t("submitFailed"))
+        }
         return
       }
       const submitData = await submitRes.json()
@@ -278,76 +201,6 @@ export function OnboardingFlow() {
         initialDraft={productDraft}
         onComplete={handleProductCaptured}
       />
-    )
-  }
-
-  if (step === "phone") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("submitTitle")}</CardTitle>
-          <CardDescription>{t("submitSubtitle")}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="onboard-phone">{tAuth("phoneLabel")}</Label>
-            <div className="flex gap-2">
-              <CountrySelect value={dialCode} onValueChange={setDialCode} disabled={pending} />
-              <Input
-                id="onboard-phone"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                placeholder={tAuth("phonePlaceholder")}
-                value={nationalNumber}
-                disabled={pending}
-                onChange={(e) => setNationalNumber(e.target.value.replace(/\D/g, ""))}
-                onKeyDown={(e) => e.key === "Enter" && sendOtp()}
-              />
-            </div>
-          </div>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={sendOtp} disabled={pending}>
-            {tAuth("sendOtp")}
-          </Button>
-        </CardFooter>
-      </Card>
-    )
-  }
-
-  if (step === "otp") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{tAuth("otpTitle")}</CardTitle>
-          <CardDescription>{tAuth("otpSubtitle", { phone: phoneE164 })}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {devCode && (
-            <Alert>
-              <AlertDescription>
-                {tAuth("devOtpHint")} <span className="font-mono font-semibold">{devCode}</span>
-              </AlertDescription>
-            </Alert>
-          )}
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <OtpInput onComplete={verifyOtp} disabled={pending} invalid={Boolean(error)} />
-        </CardContent>
-        <CardFooter className="flex flex-col items-stretch gap-2">
-          <Button variant="ghost" size="sm" disabled={resend.isActive || pending} onClick={sendOtp}>
-            {resend.isActive ? tAuth("otpResendIn", { seconds: resend.seconds }) : tAuth("otpResend")}
-          </Button>
-        </CardFooter>
-      </Card>
     )
   }
 

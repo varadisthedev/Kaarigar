@@ -11,6 +11,7 @@ import type { NextResponse } from "next/server"
 export const OAUTH_STATE_COOKIE = "oauth_state"
 export const OAUTH_NEXT_COOKIE = "oauth_next"
 export const OAUTH_LOCALE_COOKIE = "oauth_locale"
+export const OAUTH_NATIVE_COOKIE = "oauth_native"
 const OAUTH_COOKIE_PATH = "/api/auth/oauth"
 const OAUTH_COOKIE_MAX_AGE = 10 * 60 // 10 minutes — plenty for a consent screen, short if abandoned
 
@@ -18,7 +19,7 @@ const isProd = process.env.NODE_ENV === "production"
 
 export function setOAuthFlowCookies(
   res: NextResponse,
-  values: { state: string; next: string; locale: string }
+  values: { state: string; next: string; locale: string; isNative?: boolean }
 ): void {
   const opts = {
     httpOnly: true,
@@ -30,6 +31,9 @@ export function setOAuthFlowCookies(
   res.cookies.set(OAUTH_STATE_COOKIE, values.state, opts)
   res.cookies.set(OAUTH_NEXT_COOKIE, values.next, opts)
   res.cookies.set(OAUTH_LOCALE_COOKIE, values.locale, opts)
+  if (values.isNative) {
+    res.cookies.set(OAUTH_NATIVE_COOKIE, "true", opts)
+  }
 }
 
 export function clearOAuthFlowCookies(res: NextResponse): void {
@@ -37,4 +41,5 @@ export function clearOAuthFlowCookies(res: NextResponse): void {
   res.cookies.set(OAUTH_STATE_COOKIE, "", opts)
   res.cookies.set(OAUTH_NEXT_COOKIE, "", opts)
   res.cookies.set(OAUTH_LOCALE_COOKIE, "", opts)
+  res.cookies.set(OAUTH_NATIVE_COOKIE, "", opts)
 }

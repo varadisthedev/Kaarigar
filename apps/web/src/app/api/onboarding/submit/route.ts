@@ -5,6 +5,7 @@ import { submitBusiness } from "@/core/business/onboarding.service"
 import { getCurrentUser } from "@/infra/http/current-user"
 import { requireCsrf } from "@/infra/http/csrf"
 import { isNativeClient } from "@/infra/http/auth-cookies"
+import { findBusinessesByOwner } from "@/infra/db/repositories/business.repository"
 
 const mediaSchema = z.object({ url: z.string().url(), publicId: z.string(), enhancedUrl: z.string().url().optional() })
 
@@ -45,12 +46,23 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
 
+  const existingBusinesses = await findBusinessesByOwner(user.sub)
+  if (existingBusinesses.length > 0) {
+    return NextResponse.json({ error: "business_exists" }, { status: 409 })
+  }
+
   const parsed = bodySchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_request", issues: parsed.error.flatten() }, { status: 400 })
   }
 
-  const business = await submitBusiness({ ...parsed.data, ownerId: user.sub })
+  const business = await submitBusiness({ ...parsed.data, ownerId: user.sub }).catch((err) => {
+    if (err instanceof Error && err.message === "business_exists") return null
+    throw err
+  })
+  if (!business) {
+    return NextResponse.json({ error: "business_exists" }, { status: 409 })
+  }
   return NextResponse.json({
     ok: true,
     business: { id: business.id, status: business.status, businessCode: business.businessCode },
