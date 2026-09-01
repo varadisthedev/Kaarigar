@@ -29,7 +29,12 @@ const schema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32).optional(),
   JWT_REFRESH_SECRET: z.string().min(32).optional(),
 
-  // --- OTP delivery (Twilio SMS) ---
+  // --- OTP delivery (Renflair WhatsApp — primary) ---
+  RENFLAIR_WHATSAPP_API_KEY: z.string().optional(),
+  /** @deprecated use RENFLAIR_WHATSAPP_API_KEY */
+  RENFLAIR_SMS_API_KEY: z.string().optional(),
+
+  // --- OTP delivery (Twilio SMS — optional fallback) ---
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_PHONE_NUMBER: z.string().optional(),
@@ -141,6 +146,7 @@ export const env = {
   TWILIO_AUTH_TOKEN: (raw.TWILIO_AUTH_TOKEN ?? raw.TWILIO_CLIENT_SECRET)?.trim(),
   TWILIO_PHONE_NUMBER: raw.TWILIO_PHONE_NUMBER?.trim(),
   TWILIO_MESSAGING_SERVICE_SID: raw.TWILIO_MESSAGING_SERVICE_SID?.trim(),
+  RENFLAIR_WHATSAPP_API_KEY: (raw.RENFLAIR_WHATSAPP_API_KEY ?? raw.RENFLAIR_SMS_API_KEY)?.trim(),
 }
 
 /**
@@ -150,13 +156,13 @@ export const env = {
  */
 export const features = {
   database: Boolean(env.DATABASE_URL),
-  smsProvider: (
-    env.TWILIO_ACCOUNT_SID &&
-    env.TWILIO_AUTH_TOKEN &&
-    (env.TWILIO_PHONE_NUMBER || env.TWILIO_MESSAGING_SERVICE_SID)
+  smsProvider: (env.RENFLAIR_WHATSAPP_API_KEY
+    ? "renflair"
+    : env.TWILIO_ACCOUNT_SID &&
+        env.TWILIO_AUTH_TOKEN &&
+        (env.TWILIO_PHONE_NUMBER || env.TWILIO_MESSAGING_SERVICE_SID)
       ? "twilio"
-      : "none"
-  ) as "twilio" | "none",
+      : "none") as "renflair" | "twilio" | "none",
   sarvam: Boolean(env.SARVAM_API_KEY),
   mlService: Boolean(env.ML_SERVICE_URL),
   gemini: Boolean(env.GEMINI_API_KEY),

@@ -49,7 +49,7 @@ npm run build                     # Next.js build
 
 ## OTP Flow (Primary Authentication)
 
-- **Twilio SMS** for OTP delivery (required for both dev and prod)
+- **Renflair WhatsApp** for OTP delivery (primary)
 - OTP codes argon2id-hashed at rest
 - Rate limits: 5 requests/hour per phone, 15 requests/hour per IP
 - OTP verification window: 20 minutes (increased from 10)
@@ -66,7 +66,7 @@ npm run build                     # Next.js build
 
 All integrations optional - app boots with zero keys configured:
 - `DATABASE_URL` - Neon Postgres connection
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` - Twilio SMS (required)
+- `RENFLAIR_WHATSAPP_API_KEY` - Renflair WhatsApp OTP (required)
 - `ML_SERVICE_URL` - Python microservice (optional, localhost:8000)
 - `GOOGLE_*`, `GITHUB_*` - OAuth providers (optional)
 

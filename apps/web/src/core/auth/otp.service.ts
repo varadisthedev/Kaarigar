@@ -57,7 +57,7 @@ export async function requestOtp(input: {
   if (!result.delivered) {
     // Login fallback: show OTP on the page when SMS fails (Twilio trial/India geo, etc.)
     if (input.purpose === "login") {
-      console.warn("[otp] SMS send failed — exposing code on login page as fallback", result.providerRef)
+      console.warn("[otp] OTP delivery failed — exposing code on login page as fallback", result.providerRef)
       return { ok: true, devCode: code, smsFailed: true }
     }
     return { ok: false, error: "send_failed" }
