@@ -29,8 +29,13 @@ const schema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32).optional(),
   JWT_REFRESH_SECRET: z.string().min(32).optional(),
 
-  // --- OTP delivery (Renflair WhatsApp — primary) ---
+  // --- OTP delivery (Renflair WhatsApp — primary + fallbacks) ---
   RENFLAIR_WHATSAPP_API_KEY: z.string().optional(),
+  RENFLAIR_WHATSAPP_API_KEY_2: z.string().optional(),
+  RENFLAIR_WHATSAPP_API_KEY_3: z.string().optional(),
+  RENFLAIR_WHATSAPP_API_KEY_4: z.string().optional(),
+  RENFLAIR_WHATSAPP_API_KEY_5: z.string().optional(),
+  RENFLAIR_WHATSAPP_API_KEY_6: z.string().optional(),
   /** @deprecated use RENFLAIR_WHATSAPP_API_KEY */
   RENFLAIR_SMS_API_KEY: z.string().optional(),
 
@@ -147,6 +152,23 @@ export const env = {
   TWILIO_PHONE_NUMBER: raw.TWILIO_PHONE_NUMBER?.trim(),
   TWILIO_MESSAGING_SERVICE_SID: raw.TWILIO_MESSAGING_SERVICE_SID?.trim(),
   RENFLAIR_WHATSAPP_API_KEY: (raw.RENFLAIR_WHATSAPP_API_KEY ?? raw.RENFLAIR_SMS_API_KEY)?.trim(),
+  RENFLAIR_WHATSAPP_API_KEY_2: raw.RENFLAIR_WHATSAPP_API_KEY_2?.trim(),
+  RENFLAIR_WHATSAPP_API_KEY_3: raw.RENFLAIR_WHATSAPP_API_KEY_3?.trim(),
+  RENFLAIR_WHATSAPP_API_KEY_4: raw.RENFLAIR_WHATSAPP_API_KEY_4?.trim(),
+  RENFLAIR_WHATSAPP_API_KEY_5: raw.RENFLAIR_WHATSAPP_API_KEY_5?.trim(),
+  RENFLAIR_WHATSAPP_API_KEY_6: raw.RENFLAIR_WHATSAPP_API_KEY_6?.trim(),
+}
+
+/** Ordered Renflair WhatsApp API keys — primary first, then fallbacks when quota is exhausted. */
+export function renflairWhatsappApiKeys(): string[] {
+  return [
+    env.RENFLAIR_WHATSAPP_API_KEY,
+    env.RENFLAIR_WHATSAPP_API_KEY_2,
+    env.RENFLAIR_WHATSAPP_API_KEY_3,
+    env.RENFLAIR_WHATSAPP_API_KEY_4,
+    env.RENFLAIR_WHATSAPP_API_KEY_5,
+    env.RENFLAIR_WHATSAPP_API_KEY_6,
+  ].filter((key): key is string => Boolean(key))
 }
 
 /**
@@ -156,7 +178,7 @@ export const env = {
  */
 export const features = {
   database: Boolean(env.DATABASE_URL),
-  smsProvider: (env.RENFLAIR_WHATSAPP_API_KEY
+  smsProvider: (renflairWhatsappApiKeys().length > 0
     ? "renflair"
     : env.TWILIO_ACCOUNT_SID &&
         env.TWILIO_AUTH_TOKEN &&
