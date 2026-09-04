@@ -12,12 +12,11 @@
 
 </div>
 
-![Kaarigar demo](repo-assets/demo.gif)
+<!-- ![Kaarigar demo](repo-assets/demo.gif)-->
 
 ---
-
-## Screenshots
-
+![Product flow from capture to sale](repo-assets/flowchart.png)
+# Screenshots
 **Voice QnA** — artisan onboarding in Hindi / English / Marathi
 
 ![Voice QnA — artisan onboarding in Hindi / English / Marathi](repo-assets/qna-nlp.png)
@@ -26,7 +25,7 @@
 
 ![Gemini + NLP — transcript cleanup, catalog copy, confirmation](repo-assets/gemini-enhance-nlp.png)
 
-![Product flow from capture to sale](repo-assets/flowchart.png)
+
 
 ---
 
