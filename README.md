@@ -10,36 +10,23 @@
 [![Python](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Postgres](https://img.shields.io/badge/Neon_Postgres-00E599?style=flat-square&logo=postgresql&logoColor=black)](https://neon.tech)
 
-<br />
-
-![Kaarigar demo](repo-assets/demo.mp4)
-
 </div>
+
+![Kaarigar demo](repo-assets/demo.gif)
 
 ---
 
 ## Screenshots
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="repo-assets/qna-nlp.png" alt="Voice QnA onboarding in Hindi" />
-      <br />
-      <sub><b>Voice QnA</b> — artisan onboarding in Hindi / English / Marathi</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="repo-assets/gemini-enhance-nlp.png" alt="Gemini-enhanced listing review" />
-      <br />
-      <sub><b>Gemini + NLP</b> — transcript cleanup, catalog copy, confirmation</sub>
-    </td>
-  </tr>
-</table>
+**Voice QnA** — artisan onboarding in Hindi / English / Marathi
 
-<p align="center">
-  <img src="repo-assets/flowchart.png" alt="Kaarigar product flow from capture to sale" width="920" />
-  <br />
-  <sub>Capture → Sarvam STT → Gemini catalog → pricing model → review → inventory → Razorpay</sub>
-</p>
+![Voice QnA — artisan onboarding in Hindi / English / Marathi](repo-assets/qna-nlp.png)
+
+**Gemini + NLP** — transcript cleanup, catalog copy, confirmation
+
+![Gemini + NLP — transcript cleanup, catalog copy, confirmation](repo-assets/gemini-enhance-nlp.png)
+
+![Product flow from capture to sale](repo-assets/flowchart.png)
 
 ---
 
