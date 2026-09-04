@@ -1,123 +1,205 @@
+<div align="center">
+
 # Kaarigar
 
-An AI-driven market-linkage and smart-cataloging platform for marginalized Indian artisans — SIH26090 (Ministry of Social Justice and Empowerment). An artisan speaks about their craft in Hindi or English, AI turns that into a professional, bilingual, SEO-ready B2B listing, and — once a human reviewer approves it — the business goes live on an IndiaMART-style marketplace where buyers can browse, chat, and pay a 10% advance.
+**Voice-first market linkage for Indian artisans.** Speak about the craft — get a bilingual, SEO-ready listing, a price band, and a live storefront after human review.
 
-This is the **web MVP** of a mobile-first product. The final target is React Native + Expo; see [Architecture](#architecture) for how the codebase is shaped to make that port straightforward later.
+[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Expo](https://img.shields.io/badge/Expo-000020?style=flat-square&logo=expo&logoColor=white)](https://expo.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Python](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Postgres](https://img.shields.io/badge/Neon_Postgres-00E599?style=flat-square&logo=postgresql&logoColor=black)](https://neon.tech)
 
-## Repo layout
+<br />
 
-Two independently deployable apps, each in its own top-level folder so
-Vercel/Render can point at the right one as its project root:
+![Kaarigar demo](repo-assets/demo.mp4)
 
+</div>
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="repo-assets/qna-nlp.png" alt="Voice QnA onboarding in Hindi" />
+      <br />
+      <sub><b>Voice QnA</b> — artisan onboarding in Hindi / English / Marathi</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="repo-assets/gemini-enhance-nlp.png" alt="Gemini-enhanced listing review" />
+      <br />
+      <sub><b>Gemini + NLP</b> — transcript cleanup, catalog copy, confirmation</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="repo-assets/flowchart.png" alt="Kaarigar product flow from capture to sale" width="920" />
+  <br />
+  <sub>Capture → Sarvam STT → Gemini catalog → pricing model → review → inventory → Razorpay</sub>
+</p>
+
+---
+
+## What you get
+
+An artisan opens the **web** or **mobile** app, picks a language, photographs the product, and describes it by voice. Kaarigar turns that into a listing (title, description, SEO tags, price suggestion). After admin approval it goes live on an IndiaMART-style marketplace — buyers browse, chat, and pay a 10% advance.
+
+| Layer | Role |
+| --- | --- |
+| **Web** (`apps/web`) | Next.js marketplace, onboarding, admin queue, payments |
+| **Mobile** (`apps/mobile`) | Expo / React Native app — same flows on device |
+| **ML** (`apps/ml_service`) | FastAPI pricing model + optional Indic ASR |
+
+Every third-party key is optional. The app boots with only `DATABASE_URL`; OTP, speech, Gemini, Cloudinary, Razorpay, and Pusher each have a documented fallback.
+
+---
+
+## Tech stack
+
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=nextjs,react,ts,tailwind,python,fastapi,postgres,docker,vercel,github" alt="Next.js, React, TypeScript, Tailwind, Python, FastAPI, Postgres, Docker, Vercel, GitHub" />
+</p>
+
+| Area | Stack |
+| --- | --- |
+| Web | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind v4 |
+| Mobile | Expo 57, React Native, Expo Router |
+| API / data | Neon Postgres, Drizzle ORM, Zod |
+| Auth | Phone + WhatsApp OTP (Renflair), optional Google / GitHub OAuth, JWT |
+| Voice & AI | Sarvam AI → Gemini → Python ML → Web Speech / `speechSynthesis` |
+| Pricing | scikit-learn (FastAPI) → rules engine → optional Gemini rationale |
+| Media | Cloudinary + client WASM background removal |
+| Chat / pay | Pusher Channels, Razorpay (10% advance) |
+
+---
+
+## Quick start
+
+**One command from the repo root** (Windows). It checks `DATABASE_URL`, starts the ML service if a venv exists, boots Next.js, and opens the browser:
+
+```powershell
+.\dev.ps1
 ```
-apps/web/     Next.js app -> Vercel
-apps/render/  Python/FastAPI ML service -> Render (or similar)
-```
 
-The rest of this file covers the Next.js app (`apps/web/`); see
-`apps/render/README.md` for the ML service. Commands below assume you're in
-`apps/web/` unless noted.
+### First-time setup
 
-## Stack
-
-- **Next.js 16** (App Router, Turbopack) + **TypeScript**, deployed on Vercel
-- **Neon Postgres** via **Drizzle ORM** (`@neondatabase/serverless` HTTP driver — no connection pooling issues on serverless)
-- **next-intl** for English/Hindi, both locale-prefixed (`/en/…`, `/hi/…`) for per-language SEO
-- **Tailwind v4** + a hand-adapted shadcn preset (Base UI primitives, not Radix) — see [Design system](#design-system)
-- **Phone/OTP** (MSG91 or a console fallback) as the primary login, plus optional **Google/GitHub OAuth** — both land in the same custom JWT session system, with refresh-token rotation and reuse detection
-- **Sarvam AI** → a companion **Python/FastAPI ML service** (`apps/render/`) → the browser's **Web Speech API**, as a 3-tier speech-to-text fallback chain
-- **Gemini** for structured extraction (voice → listing) and pricing rationale, with deterministic offline fallbacks for both
-- **Cloudinary** for storage/enhancement + client-side WASM background removal (`@imgly/background-removal`)
-- **Razorpay** for advance payments
-
-Every one of those integrations is optional at the environment-variable level — the app boots and every feature degrades to a documented fallback with zero keys configured. See `.env.example`.
-
-## Getting started
-
-```bash
+```powershell
+# 1. Web
 cd apps/web
 npm install
-cp .env.example .env.local        # fill in DATABASE_URL at minimum
-npm run db:generate                # only needed after changing the schema
-npm run db:migrate                  # applies src/infra/db/migrations/*.sql
-npm run db:seed                     # 3 approved + 1 pending_review demo business
-npm run dev
+Copy-Item .env.example .env.local   # set DATABASE_URL (Neon)
+npm run db:migrate
+npm run db:seed                     # demo businesses + admin phones
+cd ../..
+
+# 2. Run everything
+.\dev.ps1
 ```
 
-Open `http://localhost:3000` — it redirects to `/en`. Try `/hi` for Hindi.
+Open [http://localhost:3000](http://localhost:3000) → redirects to `/en`. Hindi: `/hi`.
 
-With no `MSG91_*` keys set, OTP codes are printed to the server console (and shown in a dev banner in the UI) instead of sent by SMS, so the whole auth → onboarding → admin-approval → marketplace loop is testable end to end with zero external accounts.
+Without OTP keys, codes print in the **server console** (and a dev banner), so you can complete login → onboard → admin approve → marketplace with zero external accounts.
 
-### Admin access
+| Command | Where | What |
+| --- | --- | --- |
+| `.\dev.ps1` | repo root | Web + ML (if venv) + browser |
+| `npm run dev` | `apps/web` | Next.js only |
+| `npx expo start` | `apps/mobile` | Expo Go / simulator |
+| `uvicorn app.main:app --reload --port 8000` | `apps/ml_service` | Pricing + optional ASR |
 
-Log in (via the normal OTP flow) with a phone number listed in `ADMIN_PHONE_NUMBERS` — seeded as an admin user by `db:seed` — to reach `/admin` and approve the seeded `pending_review` business.
+**Admin:** log in with a number from `ADMIN_PHONE_NUMBERS` (seeded by `db:seed`), then open `/admin`.
 
-### Running the ML microservice
+**ML (optional):** pricing falls back to the rules engine if this is down.
 
-Optional — the Next.js app works without it (falls back to the deterministic pricing rules engine and skips straight to Web Speech for voice). To run it:
-
-```bash
-cd apps/render
+```powershell
+cd apps/ml_service
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+python train.py
 uvicorn app.main:app --reload --port 8000
-
-
-You may get:
-cannot be loaded because running scripts is disabled
-
-Run:
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-Then set `ML_SERVICE_URL=http://localhost:8000` in `apps/web/.env.local`. See `apps/render/README.md` for enabling the (heavier) ASR fallback tier, the shared `ML_SERVICE_API_KEY` between the two apps, and deployment notes — it needs a persistent host (Render, a Hugging Face Space, etc.), not Vercel.
+Set `ML_SERVICE_URL=http://localhost:8000` in `apps/web/.env.local`. If PowerShell blocks activation: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`.
 
-## Architecture
+---
 
-Business logic is deliberately kept out of React components and route handlers, both so it stays testable and so the eventual React Native port doesn't require rewriting it:
+## Mobile app
 
-```
-apps/web/src/
-  app/          Thin. Pages render components; API routes parse -> call core -> serialize.
-  core/         Framework-agnostic domain logic (auth, business, pricing, messaging, payments…).
-                No React, no next/*, no Drizzle imports. This is what ports to Expo largely as-is.
-  infra/        Adapters — the only place external SDKs/Drizzle/Next-specific APIs appear
-                (db/, sms/, speech/, ai/, storage/, payments/, ml/, http/, ratelimit/).
-  components/   ui/ (design-system primitives) + feature components.
-  i18n/, config/, hooks/, lib/
-apps/render/    Separate Python/FastAPI service — pricing model + optional ASR fallback.
+`apps/mobile` is a first-class **Expo** app (not a placeholder): camera, microphone, catalog, chat, NLP price estimator, Cloudinary upload. Point it at the same Next.js API.
+
+```powershell
+cd apps/mobile
+npm install
+Copy-Item .env.example .env
+npx expo start
 ```
 
-Every swappable external dependency (OTP delivery, speech-to-text, messaging transport) sits behind an interface in `core/*/ports.ts`, implemented in `infra/`. The database itself isn't treated as swappable — `core` services call plain repository functions in `infra/db/repositories/*` directly, which is what "no Drizzle in core" means in practice here.
+| Path | Purpose |
+| --- | --- |
+| `apps/mobile/app/` | Expo Router screens (`(auth)`, `(tabs)`, catalog, chat) |
+| `apps/mobile/src/lib/` | API client, auth, voice, Cloudinary |
+| `apps/mobile/src/components/` | Product cards, QnA, price estimator |
+| `apps/mobile/eas.json` | EAS Build (`com.kaarigar.mobile`) |
 
-**Auth**: no passwords anywhere. Phone + OTP is the primary, preferred path — OTP codes are argon2id-hashed at rest. Google/GitHub OAuth is additive (`core/auth/oauth.service.ts`, `infra/oauth/*`), resolving to the exact same `users` row/session system rather than a parallel one: an OAuth account either links to an existing user by verified email, or creates a new `role='buyer'` account. `users.phoneE164`/`email` are both nullable — an app-level guarantee (not a DB constraint) ensures at least one is set. Refresh tokens (from either login path) are opaque random strings stored only as an HMAC digest, with rotation and reuse-detection (a replayed, already-rotated token revokes its entire session family). CSRF is a double-submit cookie for same-origin JSON calls, plus a separate signed `state` cookie for the OAuth redirect round-trip.
+Web domain logic in `apps/web/src/core/` has no React / Next / Drizzle imports so the same policies can move to Expo without a rewrite.
 
-**Voice pipeline**: MediaRecorder captures audio → Sarvam AI → the Python ML service → (if neither is configured) the browser's own Web Speech API, decided once per session via a capability check rather than reactively per attempt. Every capture is logged to `voice_sessions` for audit/replay in the admin queue, regardless of which tier produced it.
+---
 
-**Pricing**: the Python service's scikit-learn model → a deterministic rules engine scored against seeded `price_reference` bands → an optional Gemini refinement pass. The rules engine is the only tier guaranteed to run, so a suggestion always exists even with zero API keys.
+## Folder structure
 
-## Design system
+```
+Kaarigar/
+├── apps/
+│   ├── web/                 # Next.js 16 → Vercel
+│   │   └── src/
+│   │       ├── app/         # Pages + thin API routes
+│   │       ├── core/        # Domain logic (portable to Expo)
+│   │       ├── infra/       # DB, SMS, speech, AI, payments, ML
+│   │       └── components/  # UI + feature components
+│   ├── mobile/              # Expo / React Native
+│   └── ml_service/          # FastAPI pricing + optional ASR → Render
+├── repo-assets/             # Demo video, flowchart, screenshots
+├── dev.ps1                  # One-command local start
+└── README.md
+```
 
-Palette, radius, and typography are CSS custom properties in `src/app/[locale]/globals.css` — light theme only for now, but every color is a variable and a `.dark { … }` block already exists (unstyled, kept structurally in sync) so a real dark theme later is a token-file change, not a rewrite. Devanagari gets its own font (`Noto Sans Devanagari`) and looser line-height via an `html[lang="hi"]` override, rather than reusing the Latin font stack as a fallback.
+| App | Deploy root | Host |
+| --- | --- | --- |
+| Web | `apps/web` | Vercel |
+| ML | `apps/ml_service` | Render / Fly / Docker (persistent process) |
+| Mobile | `apps/mobile` | EAS / Expo |
 
-## Aadhaar / KYC
+Use a matching `ML_SERVICE_API_KEY` on web and ML when the Python service is public.
 
-Per the SIH scope, Aadhaar verification is an **optional future module**, not part of this MVP — the `kyc_documents` table exists in the schema but is never written to. Trust in this build comes from the human admin-review queue and the verified-business badge. If you do want to add it later: don't store raw Aadhaar numbers (restricted under the Aadhaar Act §29 without being a licensed AUA/KUA) — the intended path is DigiLocker OAuth or Offline Aadhaar XML/QR, persisting only a verified name/DOB/address and the last 4 digits (for the masked `XXXX XXXX 1234` display), never the full number.
+---
 
-## Testing
+## Env (minimum)
 
-```bash
+Copy `apps/web/.env.example` → `.env.local`. **Required:** `DATABASE_URL`. Everything else degrades.
+
+| Variable | If missing |
+| --- | --- |
+| `DATABASE_URL` | App will not start |
+| `RENFLAIR_WHATSAPP_API_KEY` | OTP in console / dev banner |
+| `SARVAM_API_KEY` | Next STT tier, then Web Speech |
+| `GEMINI_API_KEY` | Keyword / rules fallback |
+| `CLOUDINARY_*` | Photo upload disabled (clear UI) |
+| `RAZORPAY_*` | Advance pay shows “not set up” |
+| `PUSHER_*` | Chat polls instead of live push |
+| `ML_SERVICE_URL` | Rules engine only |
+
+---
+
+## Tests & checks
+
+```powershell
 cd apps/web
-npm run test        # vitest — pure domain logic: OTP policy, JWT, business-code
-                     # generation, the pricing rules engine, webhook signature
-                     # verification. No DB/network required.
+npm run test        # vitest — domain only, no DB/network
 npm run typecheck
+npm run lint
 npm run build
 ```
-
-## Deploying
-
-- **Next.js app** → Vercel, with the project's root directory set to `apps/web`.
-- **ML service** → Render/Fly/a Docker-capable host (see `apps/render/README.md`), with its root directory set to `apps/render` — it's a persistent process and can't run on Vercel.
-- Fill in the real values for every blank key in `apps/web/.env.example` and `apps/render/.env.example` on whichever platform you deploy each to — including a matching `ML_SERVICE_API_KEY` on both sides, the shared secret the two apps use to authenticate to each other.

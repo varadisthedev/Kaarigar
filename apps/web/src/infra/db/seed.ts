@@ -76,7 +76,7 @@ const DEMO_PRODUCTS = [
     priceMin: "1200.00",
     priceMax: "1800.00",
     image: {
-      url: "https://images.unsplash.com/photo-1615485290382-44100c3d68c5?w=1200&q=80",
+      url: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=1200&q=80",
       publicId: "seed/varad-blue-pottery-vase",
       altEn: "Hand-painted blue pottery vase",
     },
@@ -88,7 +88,7 @@ const DEMO_PRODUCTS = [
     priceMin: "8500.00",
     priceMax: "12000.00",
     image: {
-      url: "https://images.unsplash.com/photo-1610030315375-3f77066ba980?w=1200&q=80",
+      url: "https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?w=1200&q=80",
       publicId: "seed/varad-handwoven-saree",
       altEn: "Colorful handwoven silk saree fabric",
     },
@@ -243,6 +243,11 @@ async function seedVaradDemo(db: ReturnType<typeof getDb>) {
         isPrimary: true,
         altEn: demo.image.altEn,
       })
+    } else if (existingMedia.cloudinaryPublicId.startsWith("seed/")) {
+      await db
+        .update(productMedia)
+        .set({ url: demo.image.url, altEn: demo.image.altEn })
+        .where(eq(productMedia.id, existingMedia.id))
     }
 
     productRows.push({ id: product.id, slug: demo.slug })
